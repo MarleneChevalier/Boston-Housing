@@ -1,30 +1,76 @@
 ---
 title: "Projet données manquantes : Valeur du logement en banlieue de Boston"
+author: "Olga Silva / Marlène Chevalier"
+date: "30/11/2019"  
 output:
-  pdf_document: default
   html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#packages utilisés
+library("missMDA")
+
+# chargement des données
+dHB=read.table("HousingData.csv",sep=",",header=TRUE)
+attach(dHB)
 ```
 
-## R Markdown
+## Sujet : Valeur du logement en banlieue de Boston 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichier décrit la situation de logements dans les villes de la banlieue de Boston. Il est constitué de 506 enregistrements et de 14 variables quantitatives :
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+ - **CRIM** : Taux de criminalité par habitant.   
+ - **ZN** : Proportion de terrains résidentiels pour des lots de plus de 25000 pieds carré (environ 2300m²).   
+ - **INDUS** : Proportion d'espace, en acres, consacré aux affaires non commerciales (1 acre environ 4000m²).   
+ - **CHAS** : Proximité avec la rivière Charles (=1 si en bord de rivière / =0 si éloigné de la rivière) 
+  - **NOX** : Concentration en oxyde d'azote (1 pour 10 millions)  
+  - **RM** : Nombre moyen de chambres par logement  
+  - **AGE** : Proportion des propriétés construites avant 1940
+  - **DIS** : Moyenne des distances aux 5 centres d'emploi de Boston  
+  - **RAD** : Indice d'accessibilité aux autoroutes (de 1 à 8 et 24)  
+  - **TAX** : Taux d'imposition foncier (1 pour 10 000$)  
+  - **PTRATIO** : Ratio d'élèves-enseignants  
+  - **B** : Proportion de population afro-américaine
+  - **LSTAT** : Proportion de population précaire 
+  - **MDEV** : Valeur médiane des habitations privées (en K$) 
+  
+Nous utiliserons ces données pour tenter d'expliquer la valeurs médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
+  
+## Exploration des données
 
-```{r load}
-XXXXXX
+```{r dm}
+summary(dHB)
+
+
 ```
 
-## Including Plots
+Inventaire des données manquantes :
 
-You can also embed plots, for example:
+```{r explo}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Modélisation avec données manquantes
+
+```{r modDM, echo=FALSE}
+reg=lm(MEDV~.,data=dHB)
+summary(reg)
+reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
+summary(reg2)
+```
+
+## Completion des données manquantes
+
+```{r comp, echo=FALSE}
+
+```
+
+## Modélisation sur dataset complet
+
+```{r modcompl, echo=FALSE}
+
+```
+
+## Conclusion
