@@ -1,5 +1,5 @@
 ---
-title: "Projet données manquantes : Valeur du logement en banlieue de Boston"
+title: "Projet données manquantes : Valeurs des logements en banlieue de Boston"
 author: "Olga Silva / Marlène Chevalier"
 date: "30/11/2019"  
 output:
@@ -10,6 +10,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 #packages utilisés
 library("missMDA")
+library("VIM")
 
 # chargement des données
 dHB=read.table("HousingData.csv",sep=",",header=TRUE)
@@ -18,7 +19,7 @@ attach(dHB)
 
 ## Sujet : Valeur du logement en banlieue de Boston 
 
-Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichier décrit la situation de logements dans les villes de la banlieue de Boston. Il est constitué de 506 enregistrements et de 14 variables quantitatives :
+Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichier décrit la situation des logements dans les villes de la banlieue de Boston. Il est constitué de 506 enregistrements et de 14 variables quantitatives :
 
  - **CRIM** : Taux de criminalité par habitant.   
  - **ZN** : Proportion de terrains résidentiels pour des lots de plus de 25000 pieds carré (environ 2300m²).   
@@ -35,7 +36,7 @@ Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichi
   - **LSTAT** : Proportion de population précaire 
   - **MDEV** : Valeur médiane des habitations privées (en K$) 
   
-Nous utiliserons ces données pour tenter d'expliquer la valeurs médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
+Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
   
 ## Exploration des données
 
@@ -45,7 +46,7 @@ summary(dHB)
 
 ```
 
-Inventaire des données manquantes :
+## Inventaire des données manquantes :
 
 ```{r explo}
 
