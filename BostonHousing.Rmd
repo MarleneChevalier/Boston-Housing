@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 #packages utilisés
 library("missMDA")
 library("VIM")
-library(mice)
+library("mice")
+library("lavaan")
+library(kableExtra)
 
 # chargement des données
 dHB=read.table("HousingData.csv",sep=",",header=TRUE)
@@ -20,7 +22,7 @@ attach(dHB)
 
 ## Sujet : Valeur du logement en banlieue de Boston 
 
-Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichier décrit la situation des logements dans les villes de la banlieue de Boston. Il est constitué de 506 enregistrements et de 14 variables quantitatives :
+Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichier décrit la situation des logements dans les villes de la banlieue de Boston. Il est constitué de 506 enregistrements et de 14 variables quantitatives (soit 7084 données) :
 
  - **CRIM** : Taux de criminalité par habitant.   
  - **ZN** : Proportion de terrains résidentiels pour des lots de plus de 25000 pieds carré (environ 2300m²).   
@@ -39,60 +41,79 @@ Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichi
   
 Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
   
-## Exploration des données
+# Exploration des données incomplètes
 
-```{r dm}
-summary(dHB)
+## Correlation
 
-
+```{r cor, echo=FALSE}
+cordBH=cor(dHB,use="complete.obs")
+kable(head(cordBH),format="markdown",caption="correlation des var Housing Boston",digits=2)
 ```
 
-**Inventaire des données manquantes**
 
-Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les données manquantes. Il donne comme résultat une matrice, dans laquelle chaque ligne correspond à des patterns des données manquantes. Les lignes et colonnes sont triés par la complétude des données. Cela veut dire que nous avons 394 observations pour lesquelles aucune donnée est manquante, et 18 observations pour lesquelles la donnée LSTAT est absente. Pour avoir à la fin 120 observations manquantes en total, pour les colonnes : CRIM, ZN, INDUS, CHAS, AGE, LSTAT. 
+## Modélisation sur les données incomplètes
 
-La dernière colonne indique le nombre de colonnes avec des données manquantes. 
-```{r explo}
-md.pattern(dHB,rotate.names = TRUE)
+```{r modDM, echo=FALSE}
+reg1=lm(MEDV~.,data=dHB)
+summary(reg1)
+##reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
+##summary(reg2)
+```
+
+# Inventaire des données manquantes
+
+Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les données manquantes. Le résultat est une matrice, dans laquelle chaque ligne correspond à des structures de données manquantes et chaque colonne à une variable du fichier. Les lignes et les colonnes sont triées selon le niveau de complétude des données.   
+A chaque ligne de la matrice (qui définit une structure de données manquantes du jeux de données) :  
+  - la première colonne indique le nombre d'observations correspondant à la structure de données manquantes décrite ;   
+  -  la derniere colonne donne le nombre de variables incomplètes.
+
+```{r inventDM1,echo=FALSE}
+respattern=md.pattern(dHB,rotate.names = TRUE)
+```
+
+Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM, ZN, INDUS, CHAS, AGE, LSTAT. 
+
+  - structure 1 : 394 observations pour lesquelles aucune donnée n'est manquante,
+  - structure 2 : 18 observations pour lesquelles seule la donnée de la variable LSTAT est absente,
+  - structure 3 : 18 observations pour lesquelles seule la donnée de la variable AGE est absente,   
+  ...
+  - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
+
+```{r inventDM2,echo=FALSE}
 matrixplot(dHB)
 
 ```
 
-## Modélisation avec données manquantes
 
-```{r modDM, echo=FALSE}
-reg=lm(MEDV~.,data=dHB)
-summary(reg)
-reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
-summary(reg2)
-```
+# Traitement des données manquantes
 
-## Modèlisation avec suppression par paire (pairwise deletion)
+## Suppression par paire (pairwise deletion)
 
 La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
-Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables sont très corrèles entre elles et si les données ne suivent pas une distribution normale.
+Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale.
 
-
-```{r model2}
+```{r modimpreg}
 mu <- colMeans(dHB, na.rm = TRUE)
 cv <- cov(dHB, use = "pairwise")
 
-
-library(lavaan)
-fit <- lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
+impreg <- lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
               MEDV ~~ MEDV",
              sample.mean = mu, sample.cov = cv,
              sample.nobs = sum(complete.cases(dHB)))
+
 ```
 
 D'autres solutions sont possibles aussi, comme remplacer les données manquantes par la moyenne de la variable, ou en faisant une régression avec les données observées. Même s’il s’agit des solutions rapides ces deux méthodes sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes.  
 
-## Stochastic regression imputation
+## Imputation par regression stochastique
 
-```{r model3}
+Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (decrites plus haut)
 
-imp <- mice(dHB, method = "norm.nob", m = 1, maxit = 1,
+```{r modimpregsto}
+
+impregsto <- mice(dHB, method = "norm.nob", m = 1, maxit = 1,
             seed = 1, print = FALSE)
+summary(impregsto)
 ```
 
 ## Completion des données manquantes
