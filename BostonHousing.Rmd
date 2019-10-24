@@ -54,6 +54,7 @@ Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les 
 La dernière colonne indique le nombre de colonnes avec des données manquantes. 
 ```{r explo}
 md.pattern(dHB,rotate.names = TRUE)
+matrixplot(dHB)
 
 ```
 
