@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #packages utilisés
 library("missMDA")
 library("VIM")
+library(mice)
 
 # chargement des données
 dHB=read.table("HousingData.csv",sep=",",header=TRUE)
@@ -46,10 +47,13 @@ summary(dHB)
 
 ```
 
-## Inventaire des données manquantes :
+**Inventaire des données manquantes**
 
+Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les données manquantes. Il donne comme résultat une matrice, dans laquelle chaque ligne correspond à des patterns des données manquantes. Les lignes et colonnes sont triés par la complétude des données. Cela veut dire que nous avons 394 observations pour lesquelles aucune donnée est manquante, et 18 observations pour lesquelles la donnée LSTAT est absente. Pour avoir à la fin 120 observations manquantes en total, pour les colonnes : CRIM, ZN, INDUS, CHAS, AGE, LSTAT. 
+
+La dernière colonne indique le nombre de colonnes avec des données manquantes. 
 ```{r explo}
-
+md.pattern(dHB,rotate.names = TRUE)
 
 ```
 
@@ -62,7 +66,42 @@ reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
 summary(reg2)
 ```
 
+## Modèlisation avec suppression par paire (pairwise deletion)
+
+La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
+Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables sont très corrèles entre elles et si les données ne suivent pas une distribution normale.
+
+
+```{r model2}
+mu <- colMeans(dHB, na.rm = TRUE)
+cv <- cov(dHB, use = "pairwise")
+
+
+library(lavaan)
+fit <- lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
+              MEDV ~~ MEDV",
+             sample.mean = mu, sample.cov = cv,
+             sample.nobs = sum(complete.cases(dHB)))
+```
+
+D'autres solutions sont possibles aussi, comme remplacer les données manquantes par la moyenne de la variable, ou en faisant une régression avec les données observées. Même s’il s’agit des solutions rapides ces deux méthodes sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes.  
+
+## Stochastic regression imputation
+
+```{r model3}
+
+imp <- mice(dHB, method = "norm.nob", m = 1, maxit = 1,
+            seed = 1, print = FALSE)
+```
+
 ## Completion des données manquantes
+
+Most simple fixes only work under the restrictive and often unrealistic MCAR assumption. If MCAR is implausible, such methods can provide biased estimates.
+
+If the probability of being missing is the same for all cases, then the data are said to be missing completely at random (MCAR). This effectively implies that causes of the missing data are unrelated to the data. We may consequently ignore many of the complexities that arise because data are missing, apart from the obvious loss of information. An example of MCAR is a weighing scale that ran out of batteries. While convenient, MCAR is often unrealistic for the data at hand.
+
+Schafer and Graham (2002, 156) cover the middle ground:
+If a missing data problem can be resolved by discarding only a small part of the sample, then the method can be quite effective.
 
 ```{r comp, echo=FALSE}
 
