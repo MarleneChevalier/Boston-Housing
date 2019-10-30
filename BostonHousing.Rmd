@@ -44,10 +44,33 @@ Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichi
 Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
   
 # Exploration des données incomplètes
+## Graphiques sur les données incomplètes
+
+```{r graDM, echo=FALSE}
+op=par(mfrow = c(2, 2), pch = 16, col="green")
+{plot(CRIM,MEDV)
+plot(ZN,MEDV)}
+plot(INDUS,MEDV)
+plot(NOX,MEDV)
+par(op)
+title("valeur des habitations (K$)")
+par(mfrow = c(2, 2), pch = 16, col="green")
+plot(RM,MEDV)
+plot(AGE,MEDV)
+plot(DIS,MEDV)
+plot(RAD,MEDV)
+par(mfrow = c(2, 2), pch = 16, col="green")
+plot(TAX,MEDV)
+plot(PTRATIO,MEDV)
+plot(B,MEDV)
+plot(LSTAT,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+boxplot(CHAS,MEDV)
+```
 
 ## Correlation
 
-```{r cor, echo=TRUE}
+```{r cor, echo=FALSE}
 cordBH=cor(dHB,use="complete.obs")
 kable(head(cordBH),format="markdown",caption="correlation des var Housing Boston",digits=2)
 ```
@@ -55,8 +78,8 @@ kable(head(cordBH),format="markdown",caption="correlation des var Housing Boston
 
 ## Modélisation sur les données incomplètes
 
-```{r modDM, echo=TRUE}
-reg1=lm(MEDV~.,data=dHB)
+```{r modDM, echo=FALSE}
+reg1=lm(MEDV~.,data=dHB,na.action=na.omit)
 summary(reg1)
 ##reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
 ##summary(reg2)
@@ -81,6 +104,10 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
 
+```{r inventDM2,echo=FALSE}
+aggr(dHB)
+
+```
 
 ```{r manq,echo=TRUE}
 flux(dHB)[,1:3]
@@ -128,7 +155,7 @@ Rubin (1976) a classé les problèmes des données manquantes en trois catégori
 * Données manquantes de façon non aléatoire (missing not at random, MNAR). La probabilité d’absence de la valeur d’une variable dépend de variables qui n’ont pas été observées. 
 
 La plupart des corrections simples fonctionnent sous l'hypothèse peu réaliste de MCAR. 
-MAR est plus général et plus réaliste que MCAR. La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR.
+MAR est plus générale et plus réaliste que MCAR. La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR.
 
 Schafer and Graham (2002, 156) ont proposé que si le problème des données manquantes peut être traité en enlevant une petite partie de l'échantillon, alors la méthode peut être efficace.  
 
@@ -168,15 +195,15 @@ summary(est, conf.int = TRUE)
 
 ```
 
-Selon ces résultats, il semblerait que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
+Selon ces résultats, il semblerait que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%.
 Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes.
 
 ##Stepwise selection
 
 L'imputation multiple consiste en trois phases :
-1 - Imputation des données manquantes m fois
-2 - Analyse de m datasets imputés
-3 - Mise en commun des paramètres à travers m analyses
+1 - Imputation des données manquantes m fois  
+2 - Analyse de m datasets imputés  
+3 - Mise en commun des paramètres à travers m analyses  
 
 ```{r model, echo=TRUE, results="hide"}
 
@@ -187,25 +214,25 @@ expr <- expression(f1 <- lm(MEDV ~ 1),
                    f2 <- step(f1, scope = scope))
 fit <- with(imp, expr)
 
-```
-
-```{r model, echo=TRUE}
-
 formulas <- lapply(fit$analyses, formula)
 terms <- lapply(formulas, terms)
 votes <- unlist(lapply(terms, labels))
 table(votes)
 
 ```
-La function table compte le nombre de fois que chaque variable est présent dans les itérations. Le meilleure modèle semble être quand toutes les variables sont presents lors des 10 simulations. 
+La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand toutes les variables sont presentes lors des 10 simulations. 
 
-## critères d'évaluation
+## Critères d'évaluation
 
-1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q es defini comme la différence entre l'espérance de l'estimateur et le réél. Il doit être proche de zéro. 
-2 - Coverage rate (CR). c'est la proportion des intervalles de confiance qui contiennent la valeur réelle. Il doit être proche de 0.95 
+1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q est defini comme la différence entre l'espérance de l'estimateur et le réel. Il doit être proche de zéro.     
+2 - Coverage rate (CR) est la proportion d'intervalles de confiance qui contient la valeur réelle.Elle doit être proche de 0.95.  
 3 - Average width (AW), c'est un indicateur de l'efficacité statistique. La largeur doit être le plus petite possible, sans que le CR soit plus bas que la valeur nominale. 
-Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b). 
-
+Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b).  
 
 
 ## Conclusion
+
+
+## Annexes
+
+
