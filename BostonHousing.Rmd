@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 #packages utilisés
 library("missMDA")
 library("VIM")
+library(MASS)
 
+library(fitdistrplus)
 library("mice")
 library(miceadds)
 library("lavaan")
@@ -76,15 +78,6 @@ kable(head(cordBH),format="markdown",caption="correlation des var Housing Boston
 ```
 
 
-## Modélisation sur les données incomplètes
-
-```{r modDM, echo=FALSE}
-reg1=lm(MEDV~.,data=dHB,na.action=na.omit)
-summary(reg1)
-##reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
-##summary(reg2)
-```
-
 ## Inventaire des données manquantes
 
 Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les données manquantes. Le résultat est une matrice, dans laquelle chaque ligne correspond à des structures de données manquantes et chaque colonne à une variable du fichier. Les lignes et les colonnes sont triées selon le niveau de complétude des données.   
@@ -112,11 +105,35 @@ L'influx d'une variable quantifie à quel point les données manquantes se conne
 
 L'outflux d'une variable quantifie à quel point ses données observés se connectent aux données manquantes d'autres variables. D'une façon général, des valeurs plus grandes pours les deux valeurs sont preferés. 
 
-# Traitement des données manquantes
+## Modélisation sur les données incomplètes
+
+```{r modDM, echo=TRUE}
+reg1=lm(MEDV~.,data=dHB)
+summary(reg1)
+##reg2=lm(MEDV~.-INDUS-AGE,data=dHB)
+##summary(reg2)
+```
+
+Selon ces résultats, il semblerait que les variables INDUS et AGE ne soient pas pertinents pour ce modèle. 
+Nous voudrions maintenat utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, ce méthode ne fonctionne pas s'il y a des données manquantes. 
+
+Afin de pouvoir l'utiliser, nous allons appliquer une méthode très répandue, "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset, car nous allons perdre 112 observations (22% du dataset complet)
+
+```{r stepwise}
+dHB2 <-na.omit(dHB)
+model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
+summary(model)
+
+```
+
+Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. 
+
+# Traitements des données manquantes
 
 ## Suppression par paire (pairwise deletion)
 
 La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
+
 Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
 ```{r modimpreg}
@@ -143,7 +160,7 @@ impregsto <- mice(dHB, method = "norm.nob", m = 1, maxit = 1,
 summary(impregsto)
 ```
 
-## Completion des données manquantes
+# Imputation des données manquantes
 
 Rubin (1976) a classé les problèmes des données manquantes en trois catégories : 
 * Données manquantes de façon complètement aléatoire (missing completely at random, MCAR). La cause d'absence des données ne pas être liée au data. Même si pratique, cette hypothèse est peu réaliste. 
@@ -151,7 +168,7 @@ Rubin (1976) a classé les problèmes des données manquantes en trois catégori
 * Données manquantes de façon non aléatoire (missing not at random, MNAR). La probabilité d’absence de la valeur d’une variable dépend de variables qui n’ont pas été observées. 
 
 La plupart des corrections simples fonctionnent sous l'hypothèse peu réaliste de MCAR. 
-MAR est plus générale et plus réaliste que MCAR. La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR.
+MAR est plus général et plus réaliste que MCAR. La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR.
 
 Schafer and Graham (2002, 156) ont proposé que si le problème des données manquantes peut être traité en enlevant une petite partie de l'échantillon, alors la méthode peut être efficace.  
 
@@ -160,9 +177,52 @@ L'imputation multiple est maintenant acceptée comme une méthode pour traiter d
 
 ## Multiple imputation
 
+## Choix du modèle
+
+Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
+
+1 - Décider si supposition de MAR est pausible. D'habitude cette supposition est un bon départ. En plus il nous manque 22 % des données, nous sommes très loin du point problématique du 50%
+
+2 - La forme du modèle d'imputation. Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables
+L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
+
+Pour notre dataset, nous avons 5 variables numériques avec des données manquantes : CRIM, ZN, INDUS, CHAS et AGE. 
+
+La méthode par défaut est "pmm", Predictive mean matching, nous allons l'utiliser et la comparer avec rf, random forest.
+
+3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
+
+```{r pred_matrix}
+imp <- mice(dHB, print = FALSE)
+imp$predictorMatrix
+
+```
+
+Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT.
+Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
+
+4 - Imputer ou non des variables qui sont des functions d'autres variables incomplètes. 
+Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
+
+5 - L'ordre d'imputations des variables, car cela peut affecter  la convergence de l'algorithme. 
+Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
+
+```{r convergence}
+imp <- mice(dHB, seed = 62006, maxit = 20, print = FALSE)
+plot(imp)
+
+```
+
+Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien les cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
+
+6 - La mise en place des imputations de départ et le nombre d'itérations.
+
+7 - la taille de m, le nombre d'ensembles des données imputées.  
+Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
+
 **attention la méthode est à modifier, j'ai laissé la méthode par défaut "pmm"!!!**
 
-Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle. 
+ 
 
 ```{r mult_imputation, echo=TRUE}
 #classic recommended workflow
@@ -191,15 +251,16 @@ summary(est, conf.int = TRUE)
 
 ```
 
-Selon ces résultats, il semblerait que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%.
+Selon ces résultats, il semblerait que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
 Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes.
+
 
 ##Stepwise selection
 
 L'imputation multiple consiste en trois phases :
-1 - Imputation des données manquantes m fois  
-2 - Analyse de m datasets imputés  
-3 - Mise en commun des paramètres à travers m analyses  
+1 - Imputation des données manquantes m fois
+2 - Analyse de m datasets imputés
+3 - Mise en commun des paramètres à travers m analyses
 
 ```{r model, echo=TRUE, results="hide"}
 
@@ -210,25 +271,29 @@ expr <- expression(f1 <- lm(MEDV ~ 1),
                    f2 <- step(f1, scope = scope))
 fit <- with(imp, expr)
 
+```
+
+```{r model, echo=TRUE}
+
 formulas <- lapply(fit$analyses, formula)
 terms <- lapply(formulas, terms)
 votes <- unlist(lapply(terms, labels))
 table(votes)
 
 ```
-La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand toutes les variables sont presentes lors des 10 simulations. 
+La function table compte le nombre de fois que chaque variable est présent dans les itérations. Le meilleure modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont presents. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
 
-## Critères d'évaluation
+## critères d'évaluation
 
-1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q est defini comme la différence entre l'espérance de l'estimateur et le réel. Il doit être proche de zéro.     
-2 - Coverage rate (CR) est la proportion d'intervalles de confiance qui contient la valeur réelle.Elle doit être proche de 0.95.  
+1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q es defini comme la différence entre l'espérance de l'estimateur et le réél. Il doit être proche de zéro. 
+2 - Coverage rate (CR). c'est la proportion des intervalles de confiance qui contiennent la valeur réelle. Il doit être proche de 0.95 
 3 - Average width (AW), c'est un indicateur de l'efficacité statistique. La largeur doit être le plus petite possible, sans que le CR soit plus bas que la valeur nominale. 
-Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b).  
+Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b). 
 
 
-## Conclusion
 
 
-## Annexes
+# Conclusion
 
 
+# Annexes
