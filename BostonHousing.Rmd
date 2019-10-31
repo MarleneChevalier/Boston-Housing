@@ -34,12 +34,13 @@ font-size: 14px;
 
 #packages utilisés
 library(knitr)
-library("missMDA")
+library(missMDA)
 library("VIM")
 library(MASS)
 
-library(fitdistrplus)
-library("mice")
+library(plotly)
+library("fitdistrplus")
+library(mice)
 library(miceadds)
 library("lavaan")
 library(kableExtra)
@@ -73,29 +74,26 @@ Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichi
   
 Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
   
-# Exploration des données incomplètes
+# 1.Exploration des données incomplètes
 ## Graphiques sur les données incomplètes
 
 ```{r graDM}
-op=par(mfrow = c(2, 2), pch = 16, col="green")
-{plot(CRIM,MEDV)
-plot(ZN,MEDV)}
-plot(INDUS,MEDV)
-plot(NOX,MEDV)
-par(op)
-title("valeur des habitations (K$)")
-par(mfrow = c(2, 2), pch = 16, col="green")
-plot(RM,MEDV)
-plot(AGE,MEDV)
-plot(DIS,MEDV)
-plot(RAD,MEDV)
-par(mfrow = c(2, 2), pch = 16, col="green")
-plot(TAX,MEDV)
-plot(PTRATIO,MEDV)
-plot(B,MEDV)
-plot(LSTAT,MEDV)
-par(mfrow = c(1, 2))
-boxplot(CHAS,MEDV, col="green")
+
+ggplot(data=dHB, aes(x = MEDV, y=MEDV, color = "black")) +
+geom_line()
+
+#ggplot(data=d.precipmonth, mapping=aes(x = as.factor(Month), y = MeanPrecip)) +
+ # geom_bar(stat="identity", col="black",fill="deepskyblue3",width = 1) + 
+ # labs(subtitle="graphe1 : Moyenne",x="", y="Précipitations (mm)" ) +  
+ # scale_y_continuous(breaks=seq(0,3,0.5),limits=c(0,3)) +
+ # scale_x_discrete(labels=c("Jan","Fev","Mar","Avr","Mai","Juin","Juil","Aou", "Sep", "Oct","Nov","Dec"))
+
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(MEDV)
+mean(MEDV)
+abline(a=mean(MEDV),b=0)
+var(MEDV)
+
 ```
 
 ## Correlation des variables
@@ -114,7 +112,7 @@ Nous commençons par examiner les résultats d'une regression linéaire de MEDV 
 Nous voudrions maintenant utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
 Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset (cf. annexe 1.4). Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. 
 
-# Inventaire des données manquantes 
+# 2.Inventaire des données manquantes 
 
 ## Structure des données manquantes
 
@@ -138,10 +136,15 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
  
 ## Proportion de données manquantes
 
+La fonction aggr permet d'appréhender les données par leur proportion dans le jeux complet.
+
 ```{r inventDM2}
 aggr(dHB,numbers=TRUE,bars=FALSE)
 ```
-
+En sortie, 2 graphiques :  
+  - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS (autour de 4%)  
+  - le graphique de droite donne la proportion de chaque structure de données.   
+  Ici 78% du jeux de données est complet pour toutes les variables, 3.8% ont uniquement la données de la variable CRIM qui n'est pas renseignée, ...
 
 
 ```{r inventDM3}
@@ -166,7 +169,7 @@ aggr(dHB,numbers=TRUE,bars=FALSE)
 
 
 ## Lien variables manquantes / variables observées 
-```{r manq,echo=FALSE}
+```{r manq}
 fluxdBH=flux(dHB)[,2:3]
 kable(head(fluxdBH),format="pandoc",digits=3)
 ```
@@ -189,7 +192,7 @@ MAR est plus générale et plus réaliste que MCAR. La plupart des méthodes mod
 Schafer and Graham (2002, 156) ont proposé que si le problème des données manquantes peut être traité en enlevant une petite partie de l'échantillon, alors la méthode peut être efficace.  
 
 
-# Traitements des données manquantes
+# 3.Traitement des données manquantes
 
 ## Imputation simple
 
@@ -301,7 +304,7 @@ summary(est, conf.int = TRUE)
 
 ```
 
-Selon ces résultats, il semblerait que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
+Selon ces résultats, il semble que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
 Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes.
 
 
@@ -312,24 +315,25 @@ L'imputation multiple consiste en trois phases :
 2 - Analyse de m datasets imputés
 3 - Mise en commun des paramètres à travers m analyses
 
-```{r model, results="hide"}
+```{r model,results="hide"}
 
-imp <- mice(dHB, seed = 123, m = 10, print = FALSE)
-scope <- list(upper=~CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT,
+imp = mice(dHB, seed = 123, m = 10, print = FALSE)
+scope = list(upper=~CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT,
               lower = ~1)
-expr <- expression(f1 <- lm(MEDV ~ 1),
+expr = expression(f1 <- lm(MEDV ~ 1),
                    f2 <- step(f1, scope = scope))
-fit <- with(imp, expr)
+fit = with(imp, expr)
 
-formulas <- lapply(fit$analyses, formula)
-terms <- lapply(formulas, terms)
-votes <- unlist(lapply(terms, labels))
+formulas = lapply(fit$analyses, formula)
+terms = lapply(formulas, terms)
+votes = unlist(lapply(terms, labels))
 table(votes)
 
 ```
-La function table compte le nombre de fois que chaque variable est présent dans les itérations. Le meilleure modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont presents. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
 
-## critères d'évaluation
+La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont presentes. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
+
+## Critères d'évaluation
 
 1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q est defini comme la différence entre l'espérance de l'estimateur et le réél. Il doit être proche de zéro. 
 2 - Coverage rate (CR). c'est la proportion des intervalles de confiance qui contiennent la valeur réelle. Il doit être proche de 0.95 
@@ -343,6 +347,51 @@ Des méthodes sans biais et avec un bon CR sont connues comme "randomization-val
 
 
 # Annexes  
+
+### annexe 1.1 : graphiques sur le jeu complet  
+
+```{r angraDM}
+
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(CRIM)
+plot(CRIM,MEDV)
+title()
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(INDUS)
+plot(INDUS,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(NOX)
+plot(NOX,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(RM)
+plot(RM,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(AGE)
+plot(AGE,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(DIS)
+plot(DIS,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(RAD)
+plot(RAD,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(TAX)
+plot(TAX,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(PTRATIO)
+plot(PTRATIO,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(B)
+plot(B,MEDV)
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(LSTAT)
+plot(LSTAT,MEDV)
+par(mfrow = c(1, 2))
+boxplot(CHAS,MEDV, col="green")
+
+```
+
+
 
 ### annexe 1.3 : regression lineaire MEDV sur l'ensemble des variables
 ```{r modDM}
