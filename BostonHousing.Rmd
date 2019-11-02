@@ -35,11 +35,12 @@ font-size: 14px;
 #packages utilisés
 library(knitr)
 library(missMDA)
-library("VIM")
+library(VIM)
 library(MASS)
+library(stats)
 
 library(plotly)
-library("fitdistrplus")
+library(fitdistrplus)
 library(mice)
 library(miceadds)
 library("lavaan")
@@ -77,40 +78,33 @@ Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des hab
 # 1.Exploration des données incomplètes
 ## Graphiques sur les données incomplètes
 
-```{r graDM}
+```{r stat}
+moyMEDV=round(mean(MEDV),1)
+sdMEDV=round(sd(MEDV),1)
+minMEDV=min(MEDV)
+maxMEDV=max(MEDV)
 
-ggplot(data=dHB, aes(x = MEDV, y=MEDV, color = "black")) +
-geom_line()
+```
+La valeur médiane du logement à Boston est comprise entre `r minMEDV` K$ et `r maxMEDV` K$ , en moyenne de `r moyMEDV` K$.
 
-#ggplot(data=d.precipmonth, mapping=aes(x = as.factor(Month), y = MeanPrecip)) +
- # geom_bar(stat="identity", col="black",fill="deepskyblue3",width = 1) + 
- # labs(subtitle="graphe1 : Moyenne",x="", y="Précipitations (mm)" ) +  
- # scale_y_continuous(breaks=seq(0,3,0.5),limits=c(0,3)) +
- # scale_x_discrete(labels=c("Jan","Fev","Mar","Avr","Mai","Juin","Juil","Aou", "Sep", "Oct","Nov","Dec"))
+```{r expl}
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(MEDV)
-mean(MEDV)
-abline(a=mean(MEDV),b=0)
-var(MEDV)
+par(mfrow = c(1, 1), pch = 16, col="green")
+hist(MEDV,main=NULL,xlab="valeur médiane du logement(K$)", ylab="fréquence", col="green")
+abline(v=mean(MEDV), col="red")
 
 ```
 
 ## Correlation des variables
 
-```{r cor}
-cordBH=cor(dHB,use="complete.obs")
-kable(head(cordBH [1:14,1:14]),format="markdown",digits=2)
-
-
-```
+(**cf. annexe 1.2**)
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables .  Le modèle est correctement ajusté (R2=0.75) mais il semble que les variables INDUS et AGE ne soient pas pertinentes pour ce modèle. 
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables .  Le modèle est correctement ajusté (R2=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.3**)
 
 Nous voudrions maintenant utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
-Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset (cf. annexe 1.4). Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. 
+Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset . Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (**cf. annexe 1.4**)
 
 # 2.Inventaire des données manquantes 
 
@@ -142,9 +136,9 @@ La fonction aggr permet d'appréhender les données par leur proportion dans le 
 aggr(dHB,numbers=TRUE,bars=FALSE)
 ```
 En sortie, 2 graphiques :  
-  - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS (autour de 4%)  
+  - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.  
   - le graphique de droite donne la proportion de chaque structure de données.   
-  Ici 78% du jeux de données est complet pour toutes les variables, 3.8% ont uniquement la données de la variable CRIM qui n'est pas renseignée, ...
+  Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
 
 
 ```{r inventDM3}
@@ -168,15 +162,19 @@ En sortie, 2 graphiques :
 ```
 
 
-## Lien variables manquantes / variables observées 
-```{r manq}
-fluxdBH=flux(dHB)[,2:3]
-kable(head(fluxdBH),format="pandoc",digits=3)
-```
+## Lien variables manquantes / variables observées
 
+Le lien entre les variables maquantes et observés peut se mesurer par le tableau des "influx" et "outflux".
 L'influx d'une variable quantifie à quel point les données manquantes se connectent aux données observées des autres variables. 
 L'outflux d'une variable quantifie à quel point les données observées se connectent aux données manquantes d'autres variables. 
-D'une façon générale, des valeurs plus grandes pour les deux valeurs sont preferées. 
+D'une façon générale, des valeurs plus grandes pour les deux valeurs sont préferées.
+
+```{r manq}
+fluxdBH=flux(dHB)[,2:3]
+kable((fluxdBH),format="pandoc",digits=3)
+```
+
+ 
 
 
 ## Catégories de données manquantes
@@ -228,15 +226,15 @@ summary(impregsto)
 
 
 ## Imputation multiple
-L'imputation multiple est maintenant acceptée comme une méthode pour traiter des données non complètes. L'imputation correspond à l'action de convertir un échantillon non complet dans un échantillon complet. Le but de l'imputation multiple est d'imputer plusieurs fois les données manquantes, analyser les données complétés et ensuite intégrer les résultats des analyses. 
-
-
+L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétés et ensuite d'intégrer les résultats des analyses. 
 
 Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
 
-1 - Décider si supposition de MAR est plausible. D'habitude cette supposition est un bon départ. En plus il nous manque 22 % des données, nous sommes très loin du point problématique du 50%
+1 - Décider si supposition de MAR est plausible.  
+D'habitude cette supposition est un bon départ. En plus il nous manque 22 % des données, nous sommes très loin du point problématique du 50%
 
-2 - La forme du modèle d'imputation. Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables
+2 - La forme du modèle d'imputation.  
+Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables
 L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
 
 Pour notre dataset, nous avons 5 variables numériques avec des données manquantes : CRIM, ZN, INDUS, CHAS et AGE. 
@@ -254,10 +252,10 @@ imp$predictorMatrix
 Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT.
 Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
 
-4 - Imputer ou non des variables qui sont des functions d'autres variables incomplètes. 
+4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
 Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
 
-5 - L'ordre d'imputations des variables, car cela peut affecter  la convergence de l'algorithme. 
+5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme).    
 Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
 
 ```{r convergence}
@@ -268,9 +266,9 @@ plot(imp)
 
 Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien les cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
 
-6 - La mise en place des imputations de départ et le nombre d'itérations.
+6 - La mise en place des imputations de départ et le nombre d'itérations.  
 
-7 - la taille de m, le nombre d'ensembles des données imputées.  
+7 - la taille de m, le nombre d'ensembles des données imputées.   
 Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
 
 **attention la méthode est à modifier, j'ai laissé la méthode par défaut "pmm"!!!**
@@ -348,59 +346,108 @@ Des méthodes sans biais et avec un bon CR sont connues comme "randomization-val
 
 # Annexes  
 
-### annexe 1.1 : graphiques sur le jeu complet  
+### Annexe 1.1 : graphiques exploratoires du jeu de données
 
 ```{r angraDM}
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(CRIM)
-plot(CRIM,MEDV)
-title()
+hist(CRIM,main="",xlab="taux de criminalité",ylab="fréquence", col="green")
+plot(CRIM,MEDV,xlab="taux de criminalité",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et taux de criminalité")
+
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(INDUS)
-plot(INDUS,MEDV)
+hist(INDUS,main=NULL,xlab="prop.surface activité industrielle",ylab="fréquence", col="green")
+plot(INDUS,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title(main="Valeur médiane du logement et proportion de surface d'activité industrielle")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(NOX)
-plot(NOX,MEDV)
+hist(NOX,main="",xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="green")
+plot(NOX,MEDV,xlab="concentration oxyde d'azote (1/10M)",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et concentration en oxyde d'azote")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RM)
-plot(RM,MEDV)
+hist(RM,main="",xlab="nombre de chambre",ylab="fréquence", col="green")
+plot(RM,MEDV,xlab="nombre de chambre",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et nombre moyen de chambre")
+
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(AGE)
-plot(AGE,MEDV)
+hist(AGE,main="",xlab="prop. construites avant 1940",ylab="fréquence", col="green")
+plot(AGE,MEDV,xlab="prop. construites avant 1940",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur du logement et proportion de propriétes construites avant 1940")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(DIS)
-plot(DIS,MEDV)
+hist(DIS,main="",xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="green")
+plot(DIS,MEDV,xlab="distance moyenne aux centres d'emplois",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur du logement et distance moyenne aux 5 centres d'emplois")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RAD)
-plot(RAD,MEDV)
+hist(RAD,main="",xlab="indice d'accessibilité des autoroutes",ylab="fréquence", col="green")
+plot(RAD,MEDV,xlab="indice d'accessibilité des autoroutes",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et indice d'accessibilité des autoroutes")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(TAX)
-plot(TAX,MEDV)
+hist(TAX,main="",xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="green")
+plot(TAX,MEDV,xlab="taux d'imposition foncier (1/10K$",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et taux d'imposition foncier")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(PTRATIO)
-plot(PTRATIO,MEDV)
+hist(PTRATIO,main="",xlab="ratio élèves-enseignants",ylab="fréquence", col="green")
+plot(PTRATIO,MEDV,xlab="ratio élèves-enseignants",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et ratio élèves-enseignants")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(B)
-plot(B,MEDV)
+hist(B,main="",xlab="proportion de population afro-américaine",ylab="fréquence", col="green")
+plot(B,MEDV,xlab="proportion de population afro-américaine",ylab="valeur médiane du logement (K$)")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et proportion de population afro-américaine")
+
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(LSTAT)
-plot(LSTAT,MEDV)
+hist(LSTAT,main="",xlab="proportion de population précaire",ylab="fréquence", col="green")
+plot(LSTAT,MEDV,xlab="proportion de population précaire",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title("Valeur médiane du logement et proportion de population précaire")
+
 par(mfrow = c(1, 2))
-boxplot(CHAS,MEDV, col="green")
+boxplot(CHAS,MEDV,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="green")
 
 ```
 
+### Annexe 1.2 : corrélations entre les variables au jeu de données
+```{r cor}
+cordBH=cor(dHB,use="complete.obs")
+kable(cordBH,format="markdown",digits=2)
 
+```
 
-### annexe 1.3 : regression lineaire MEDV sur l'ensemble des variables
+### Annexe 1.3 : regression lineaire MEDV sur l'ensemble des variables
 ```{r modDM}
 reg1=lm(MEDV~.,data=dHB)
 summary(reg1)
 
 ```
+### Annexe 1.4 : regression linéaire MEDV sur variables choisies par stepwise
 
-### annexe 1.4 : regression par stepwise MEDV sur l'ensemble des variables 
 ```{r stepwise}
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
