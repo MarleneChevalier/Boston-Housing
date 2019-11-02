@@ -22,9 +22,11 @@ font-size: 20px;
 }
 h2 { /* Header 2 */
 font-size: 16px;
+font-weight:bold;
 }
 h3 { /* Header 3 */
 font-size: 14px;
+font-weight:bold;
 }
 </style>
 
@@ -45,6 +47,7 @@ library(mice)
 library(miceadds)
 library("lavaan")
 library(kableExtra)
+library(dplyr)
 
 # options globales
 opts_chunk$set(echo=FALSE)
@@ -84,7 +87,7 @@ sdMEDV=round(sd(MEDV),1)
 minMEDV=min(MEDV)
 maxMEDV=max(MEDV)
 
-```
+``` 
 La valeur médiane du logement à Boston est comprise entre `r minMEDV` K$ et `r maxMEDV` K$ , en moyenne de `r moyMEDV` K$.
 
 ```{r expl}
@@ -95,16 +98,36 @@ abline(v=mean(MEDV), col="red")
 
 ```
 
-## Correlation des variables
+Graphiquement (*cf.annexe 1.1*), on observe que :   
+   
+   - le taux de criminalité faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
 
-(**cf. annexe 1.2**)
+   - la proportion de terrains résidentiels est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
+
+   - la proportion de surface d'activité industrielle la plus fréquente est entre 18 et 20 acres (entre 72000m² et 80000m²). a ce nivea, la valeur moyenne est bien souvent inférieurs à la valeur médiane moyenne des logements (22.5K$).  
+   
+   - la concentration d'oxyde d'azote est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
+   
+   - le nombre moyen de chambre est le plus souvent entre 5 et 7. Plus le nombre de chambre augmente, plus les logements ont de la valeur.   
+   
+   - la proportion de propriétés construites avant 1940 est très importante (majoritairement autour de 90% ). Plus cette proportion augmente, plus les logements ont de la valeur.  
+
+   - la moyenne des distances aux centres d'emploi est fréquemment faible (<4). Cette variable influence peu la valeur des logements (corrélation=0.28).  
+    
+    
+## Corrélation des variables
+
+Les corrélations les plus significatives sont entre :
+
+
+(*cf. annexe 1.2*)
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables .  Le modèle est correctement ajusté (R2=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.3**)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables .  Le modèle est correctement ajusté (R²=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
 
 Nous voudrions maintenant utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
-Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset . Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (**cf. annexe 1.4**)
+Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset . Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
 
 # 2.Inventaire des données manquantes 
 
@@ -136,9 +159,9 @@ La fonction aggr permet d'appréhender les données par leur proportion dans le 
 aggr(dHB,numbers=TRUE,bars=FALSE)
 ```
 En sortie, 2 graphiques :  
-  - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.  
-  - le graphique de droite donne la proportion de chaque structure de données.   
-  Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
+   - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.  
+   - le graphique de droite donne la proportion de chaque structure de données.   
+Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
 
 
 ```{r inventDM3}
@@ -339,24 +362,29 @@ La fonction table compte le nombre de fois que chaque variable est présente dan
 Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b). 
 
 
-
-
 # Conclusion
 
 
 # Annexes  
 
 ### Annexe 1.1 : graphiques exploratoires du jeu de données
+Les representations graphiques présente pour chaque variables explicatives la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
 
 ```{r angraDM}
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(CRIM,main="",xlab="taux de criminalité",ylab="fréquence", col="green")
+hist(CRIM,main=NULL,xlab="taux de criminalité",ylab="fréquence", col="green")
 plot(CRIM,MEDV,xlab="taux de criminalité",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et taux de criminalité")
 
+par(mfrow = c(1, 2), pch = 16, col="green")
+hist(ZN,main=NULL,xlab="prop.terrains résidentiels",ylab="fréquence", col="green")
+plot(ZN,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
+par(mfrow = c(1, 1))
+title(main="Valeur médiane du logement et proportion de terrains résidentiels")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
 hist(INDUS,main=NULL,xlab="prop.surface activité industrielle",ylab="fréquence", col="green")
@@ -366,14 +394,14 @@ par(mfrow = c(1, 1))
 title(main="Valeur médiane du logement et proportion de surface d'activité industrielle")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(NOX,main="",xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="green")
+hist(NOX,main=NULL,xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="green")
 plot(NOX,MEDV,xlab="concentration oxyde d'azote (1/10M)",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et concentration en oxyde d'azote")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RM,main="",xlab="nombre de chambre",ylab="fréquence", col="green")
+hist(RM,main=NULL,xlab="nombre de chambre",ylab="fréquence", col="green")
 plot(RM,MEDV,xlab="nombre de chambre",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
@@ -381,48 +409,49 @@ title("Valeur médiane du logement et nombre moyen de chambre")
 
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(AGE,main="",xlab="prop. construites avant 1940",ylab="fréquence", col="green")
+hist(AGE,main=NULL,xlab="prop. construites avant 1940",ylab="fréquence", col="green")
 plot(AGE,MEDV,xlab="prop. construites avant 1940",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur du logement et proportion de propriétes construites avant 1940")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(DIS,main="",xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="green")
+hist(DIS,main=NULL,xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="green")
 plot(DIS,MEDV,xlab="distance moyenne aux centres d'emplois",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur du logement et distance moyenne aux 5 centres d'emplois")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RAD,main="",xlab="indice d'accessibilité des autoroutes",ylab="fréquence", col="green")
+hist(RAD,main=NULL,xlab="indice d'accessibilité des autoroutes",ylab="fréquence", col="green")
 plot(RAD,MEDV,xlab="indice d'accessibilité des autoroutes",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et indice d'accessibilité des autoroutes")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(TAX,main="",xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="green")
+hist(TAX,main=NULL,xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="green")
 plot(TAX,MEDV,xlab="taux d'imposition foncier (1/10K$",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et taux d'imposition foncier")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(PTRATIO,main="",xlab="ratio élèves-enseignants",ylab="fréquence", col="green")
+hist(PTRATIO,main=NULL,xlab="ratio élèves-enseignants",ylab="fréquence", col="green")
 plot(PTRATIO,MEDV,xlab="ratio élèves-enseignants",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et ratio élèves-enseignants")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(B,main="",xlab="proportion de population afro-américaine",ylab="fréquence", col="green")
+hist(B,main=NULL,xlab="proportion de population afro-américaine",ylab="fréquence", col="green")
 plot(B,MEDV,xlab="proportion de population afro-américaine",ylab="valeur médiane du logement (K$)")
+abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et proportion de population afro-américaine")
+title("Valeur du logement et proportion de population afro-américaine")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(LSTAT,main="",xlab="proportion de population précaire",ylab="fréquence", col="green")
+hist(LSTAT,main=NULL,xlab="proportion de population précaire",ylab="fréquence", col="green")
 plot(LSTAT,MEDV,xlab="proportion de population précaire",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
@@ -433,10 +462,12 @@ boxplot(CHAS,MEDV,xlab="proximité avec la rivière Charles",ylab="valeur média
 
 ```
 
-### Annexe 1.2 : corrélations entre les variables au jeu de données
+### Annexe 1.2 : corrélations entre les variables du jeu de données
+Les corrélations les plus significatives apparaissent en rouge.
 ```{r cor}
-cordBH=cor(dHB,use="complete.obs")
-kable(cordBH,format="markdown",digits=2)
+cordBH=round(cor(dHB,use="complete.obs"),2)
+kable(ifelse(abs(cordBH)> 0.5, cell_spec(cordBH, "html", color = "red", 
+    bold = T), cell_spec(cordBH, "html", color = "black")),format="markdown",digits=2)
 
 ```
 
