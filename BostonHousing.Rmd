@@ -100,34 +100,36 @@ abline(v=mean(MEDV), col="red")
 
 Graphiquement (*cf.annexe 1.1*), on observe que :   
    
-   - le taux de criminalité faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
-
-   - la proportion de terrains résidentiels est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
-
-   - la proportion de surface d'activité industrielle la plus fréquente est entre 18 et 20 acres (entre 72000m² et 80000m²). a ce nivea, la valeur moyenne est bien souvent inférieurs à la valeur médiane moyenne des logements (22.5K$).  
-   
-   - la concentration d'oxyde d'azote est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
-   
-   - le nombre moyen de chambre est le plus souvent entre 5 et 7. Plus le nombre de chambre augmente, plus les logements ont de la valeur.   
-   
-   - la proportion de propriétés construites avant 1940 est très importante (majoritairement autour de 90% ). Plus cette proportion augmente, plus les logements ont de la valeur.  
-
-   - la moyenne des distances aux centres d'emploi est fréquemment faible (<4). Cette variable influence peu la valeur des logements (corrélation=0.28).  
-    
+   - Le **taux de criminalité** faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
+   - La **proportion de terrains résidentiels** est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
+   - La **proportion de surface d'activité industrielle** la plus fréquente est entre 18 et 20 acres (entre 72000m² et 80000m²). A ce nivea, la valeur moyenne est bien souvent inférieure à la valeur médiane moyenne des logements (22.5K$).  
+   - La **concentration d'oxyde d'*azote** est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
+   - Le **nombre moyen de chambre** est le plus souvent entre 5 et 7. Plus le nombre de chambre augmente, plus les logements ont de la valeur.   
+   - La **proportion de propriétés construites avant 1940** est très importante (majoritairement autour de 90% ). Plus cette proportion augmente, plus les logements ont de la valeur.  
+   - La **moyenne des distances aux centres d'emploi** est fréquemment faible (<4). Cette variable influence peu la valeur des logements (corrélation=0.28).  
+   - L'**imposition foncière** prend la plus importante partie de ses valeurs entre 200 et 500. Puis une autre serie importante de ses valeurs est autour de 666 ; à ce niveau d'impôt, la valeur du logement est plus faible (<moyenne 22.5).  
+   - Le **ratio élèves-enseignants** est réparti quasi-équitablement autour de la valeur moyenne du logement.Une hausse de ce ratio a tendance à faire baisser le prix du logenment (corrélation =-0.54)
+   - La **proportion de population afro-américaine** est importante; mais son influence n'est pas significative sur la valeur du logement (cor =0.35)
+   - La **proportion de population précaire** influence négativement la valeur des logements (cor =-0.74).
+   - L' **accessibilité aux autoroutes** 
+   - La **proximité avec la rivière Charles** 
     
 ## Corrélation des variables
 
-Les corrélations les plus significatives sont entre :
+Les corrélations les plus significatives de la valeur du logement sont avec :  
 
-
+   - RM (0.72) : plus le nombre de chambre est important, plus la valeur du biens est forte.  
+   - INDUS et RAD (-0.51) : plus l'espace d'affaires non commerciales ou plus l'indice d'accessibilité aux autoroutes seront importants, moins la valeur du bien sera élevée.    
+   - PTRATIO (-0.54) : plus le ratio elèves-enseignants est fort, moins la valeur des biens est élevée.  
+   - LSTAT (-0.74) : une forte proportion de population précaire réduira très fortement la valeur des biens.  
 (*cf. annexe 1.2*)
 
 ## Modélisation sur les données incomplètes
-
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables .  Le modèle est correctement ajusté (R²=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
 
 Nous voudrions maintenant utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
-Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset . Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
+Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset.   
+Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
 
 # 2.Inventaire des données manquantes 
 
@@ -135,7 +137,8 @@ Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletio
 
 Nous allons utiliser la fonction 'md.pattern' du package mice pour analyser les données manquantes. Le résultat est une matrice, dans laquelle chaque ligne correspond à des structures de données manquantes et chaque colonne à une variable du fichier. Les lignes et les colonnes sont triées selon le niveau de complétude des données.   
 A chaque ligne de la matrice (qui définit une structure de données manquantes du jeux de données) :  
-  - la première colonne indique le nombre d'observations correspondant à la structure de données manquantes décrite ;   
+
+  - la première colonne indique le nombre d'observations correspondant à la structure de données manquantes décrite ;    
   - la derniere colonne donne le nombre de variables incomplètes.
 
 ```{r inventDM1}
@@ -159,31 +162,10 @@ La fonction aggr permet d'appréhender les données par leur proportion dans le 
 aggr(dHB,numbers=TRUE,bars=FALSE)
 ```
 En sortie, 2 graphiques :  
-   - le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.  
-   - le graphique de droite donne la proportion de chaque structure de données.   
+
+  - Le graphique de gauche donne la proportion de données maquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.    
+  - Le graphique de droite donne la proportion de chaque structure de données.   
 Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
-
-
-```{r inventDM3}
-## Nuage de points 
-#n=506
-#txDM=1/6
-#p=20/n
-#indice=sample(1:n, size=round(n*txDM))
-#indices=CRIM[is.na(CRIM)]
-#CRIM[is.na(CRIM)]
-#clr= rep("black",n)
-#clr[indices]= "red"
-#CRIM[indices]
-
-#plot(CRIM,MEDV,col=clr, type="p")
-#plot(ZN,MEDV)
-#plot(INDUS,MEDV)
-#plot(CHAS,MEDV)
-#plot(MEDV)
-#plot(LSTAT,MEDV)
-```
-
 
 ## Lien variables manquantes / variables observées
 
@@ -194,18 +176,17 @@ D'une façon générale, des valeurs plus grandes pour les deux valeurs sont pr�
 
 ```{r manq}
 fluxdBH=flux(dHB)[,2:3]
-kable((fluxdBH),format="pandoc",digits=3)
+kable((fluxdBH),format="markdown",digits=3)
 ```
-
- 
 
 
 ## Catégories de données manquantes
 
 Rubin (1976) a classé les problèmes des données manquantes en trois catégories :  
-  - Données manquantes de façon complètement aléatoire (missing completely at random, MCAR). La cause d'absence des données ne pas être liée au data. Même si pratique, cette hypothèse est peu réaliste.  
-  - Données manquantes de façon aléatoire (missing at random, MAR). La probabilité d’absence de la valeur d’une variable dépend des valeurs prises par d’autres variables qui ont été observées  
-  - Données manquantes de façon non aléatoire (missing not at random, MNAR). La probabilité d’absence de la valeur d’une variable dépend de variables qui n’ont pas été observées. 
+
+  - **Données manquantes de façon complètement aléatoire** (missing completely at random, MCAR). La cause d'absence des données ne pas être liée au data. Même si pratique, cette hypothèse est peu réaliste.  
+  - **Données manquantes de façon aléatoire** (missing at random, MAR). La probabilité d’absence de la valeur d’une variable dépend des valeurs prises par d’autres variables qui ont été observées  
+  - **Données manquantes de façon non aléatoire** (missing not at random, MNAR). La probabilité d’absence de la valeur d’une variable dépend de variables qui n’ont pas été observées. 
 
 La plupart des corrections simples fonctionnent sous l'hypothèse peu réaliste de MCAR. 
 MAR est plus générale et plus réaliste que MCAR. La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR.
@@ -216,6 +197,10 @@ Schafer and Graham (2002, 156) ont proposé que si le problème des données man
 # 3.Traitement des données manquantes
 
 ## Imputation simple
+Les méthode d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
+Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...) Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
+
+Nous allons ici en tester 2 : la suppression par paire etl'imputation par regression stochastique.
 
 ### Suppression par paire (pairwise deletion)
 
@@ -224,17 +209,16 @@ La suppression par paire est une autre alternative à la suppression simple des 
 Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
 ```{r modimpreg}
-mu <- colMeans(dHB, na.rm = TRUE)
-cv <- cov(dHB, use = "pairwise")
+mu = colMeans(dHB, na.rm = TRUE)
+cv = cov(dHB, use = "pairwise")
 
-impreg <- lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
+impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
               MEDV ~~ MEDV",
              sample.mean = mu, sample.cov = cv,
              sample.nobs = sum(complete.cases(dHB)))
 
 ```
 
-D'autres solutions sont possibles aussi, comme remplacer les données manquantes par la moyenne de la variable, ou en faisant une régression avec les données observées. Même s’il s’agit des solutions rapides ces deux méthodes sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes.  
 
 ### Imputation par regression stochastique
 
@@ -242,13 +226,14 @@ Cette méthode consiste à imputer les données manquantes en utilisant la regre
 
 ```{r modimpregsto}
 
-impregsto <- mice(dHB, method = "norm.nob", m = 1, maxit = 1,
+impregsto = mice(dHB, method = "norm.nob", m = 1, maxit = 1,
             seed = 1, print = FALSE)
 summary(impregsto)
 ```
 
 
 ## Imputation multiple
+
 L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétés et ensuite d'intégrer les résultats des analyses. 
 
 Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
@@ -267,7 +252,7 @@ La méthode par défaut est "pmm", Predictive mean matching, nous allons l'utili
 3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
 
 ```{r pred_matrix}
-imp <- mice(dHB, print = FALSE)
+imp = mice(dHB, print = FALSE)
 imp$predictorMatrix
 
 ```
@@ -282,7 +267,7 @@ Dans le cas de notre dataset, les variables avec des données manquantes ne sont
 Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
 
 ```{r convergence}
-imp <- mice(dHB, seed = 62006, maxit = 20, print = FALSE)
+imp = mice(dHB, seed = 62006, maxit = 20, print = FALSE)
 plot(imp)
 
 ```
@@ -301,11 +286,13 @@ Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", po
 ```{r mult_imputation}
 #classic recommended workflow
 
-imp <- mice(dHB, print = FALSE, m = 10, seed = 24415)
-fit <- with(imp, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
+imp = mice(dHB, print = FALSE, m = 10, seed = 24415)
+fit = with(imp, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
 #with : fill in the missing data and to analyze the data
-est <- pool(fit)
+est = (pool(fit))
 est
+class(est)
+#kable((est),format="markdown",digits=3)
 
 ```
 
@@ -321,7 +308,9 @@ Des test de Wald et des intervalles de confiance pour chaque element de Q sont d
 
 ```{r conf_interv}
 
-summary(est, conf.int = TRUE)
+sumWald=summary(est, conf.int = TRUE)
+kable((sumWald),format="markdown",digits=3)
+
 
 ```
 
@@ -423,13 +412,6 @@ par(mfrow = c(1, 1))
 title("Valeur du logement et distance moyenne aux 5 centres d'emplois")
 
 par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RAD,main=NULL,xlab="indice d'accessibilité des autoroutes",ylab="fréquence", col="green")
-plot(RAD,MEDV,xlab="indice d'accessibilité des autoroutes",ylab="valeur médiane du logement (K$)")
-abline(a=mean(MEDV),b=0, col="red")
-par(mfrow = c(1, 1))
-title("Valeur médiane du logement et indice d'accessibilité des autoroutes")
-
-par(mfrow = c(1, 2), pch = 16, col="green")
 hist(TAX,main=NULL,xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="green")
 plot(TAX,MEDV,xlab="taux d'imposition foncier (1/10K$",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
@@ -458,11 +440,13 @@ par(mfrow = c(1, 1))
 title("Valeur médiane du logement et proportion de population précaire")
 
 par(mfrow = c(1, 2))
-boxplot(CHAS,MEDV,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="green")
-
+RADf=factor(RAD)
+boxplot(MEDV~RADf,xlab="indice d'accessibilité aux autoroutes",ylab="valeur médiane du logement (K$)", col="green")
+CHASf=factor(CHAS)
+boxplot(MEDV~CHASf,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="green")
 ```
 
-### Annexe 1.2 : corrélations entre les variables du jeu de données
+### Annexe 1.2 : corrélation entre les variables du jeu de données
 Les corrélations les plus significatives apparaissent en rouge.
 ```{r cor}
 cordBH=round(cor(dHB,use="complete.obs"),2)
