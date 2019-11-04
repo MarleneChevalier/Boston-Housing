@@ -111,8 +111,8 @@ Graphiquement (*cf.annexe 1.1*), on observe que :
    - Le **ratio élèves-enseignants** est réparti quasi-équitablement autour de la valeur moyenne du logement.Une hausse de ce ratio a tendance à faire baisser le prix du logenment (corrélation =-0.54)
    - La **proportion de population afro-américaine** est importante; mais son influence n'est pas significative sur la valeur du logement (cor =0.35)
    - La **proportion de population précaire** influence négativement la valeur des logements (cor =-0.74).
-   - L' **accessibilité aux autoroutes** 
-   - La **proximité avec la rivière Charles** 
+   - L'**indice d'accessibilité aux autoroutes** à 24 donne les valeurs des logements les plus basses (15K$ en moyenne) . Les indices 3 et 8 donnent les valeurs de logement les plus élévées.  
+   - La **proximité avec la rivière Charles** augmente légèrement la valeur du logement.
     
 ## Corrélation des variables
 
@@ -169,16 +169,14 @@ Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des indi
 
 ## Lien variables manquantes / variables observées
 
-Le lien entre les variables maquantes et observés peut se mesurer par le tableau des "influx" et "outflux".
-L'influx d'une variable quantifie à quel point les données manquantes se connectent aux données observées des autres variables. 
-L'outflux d'une variable quantifie à quel point les données observées se connectent aux données manquantes d'autres variables. 
-D'une façon générale, des valeurs plus grandes pour les deux valeurs sont préferées.
+Le lien entre les variables maquantes et observées peut se mesurer par le tableau des "influx" et "outflux". Ces 2 statististiques permettent de quantifier la connexion entre les données observées et les données manquantes. 
 
-```{r manq}
-fluxdBH=flux(dHB)[,2:3]
-kable((fluxdBH),format="markdown",digits=3)
-```
+L'**influx d'une variable** dépend de la proportion de données manquantes de la variable. L'influx d'une variable complètement observée est égal à 0, alors que pour les variables complètement manquantes, l'influx est à 1. A proportion de données maquantes équivalentes, la variable avec le plus fort influx sera la mieux connectée aux données observées et sera donc la plus facile à imputer.
 
+L'**outflux d'une variable** indiquel'importance des valeurs observées pour imputer les valeur manquantes. L'outflux d'une variable complètement observée est égal à 1, tandis que l'outflux d'une variable complètement manquante est égal à 0. Pour deux variables ayant la même proportion de données manquantes, la variable avec un ouflux plus élevé est mieux connectée aux données manquantes, et donc potentiellement plus utile pour imputer d'autres variables.  
+(*cf. annexe 2.1*)
+
+Ici, les variables CRIM, ZN, INDUS, CHAS, AGE, LSTAT ont un influx supérieur à 0 (0.04) et un outflux est inférieur à 1 (0.8), ce qui confirme qu'elles sont incomplètes.
 
 ## Catégories de données manquantes
 
@@ -198,9 +196,9 @@ Schafer and Graham (2002, 156) ont proposé que si le problème des données man
 
 ## Imputation simple
 Les méthode d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
-Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...) Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
+Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
 
-Nous allons ici en tester 2 : la suppression par paire etl'imputation par regression stochastique.
+Nous allons ici en tester 2 : la suppression par paire et l'imputation par regression stochastique.
 
 ### Suppression par paire (pairwise deletion)
 
@@ -219,7 +217,6 @@ impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+L
 
 ```
 
-
 ### Imputation par regression stochastique
 
 Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (decrites plus haut)
@@ -229,6 +226,12 @@ Cette méthode consiste à imputer les données manquantes en utilisant la regre
 impregsto = mice(dHB, method = "norm.nob", m = 1, maxit = 1,
             seed = 1, print = FALSE)
 summary(impregsto)
+#reg2=lm(MEDV~.,data=impregsto)
+#summary(reg2)
+#dHB$CRIM[indice]=NA
+#reg0=lm(x1~x2,data=base[-indice,])
+#base$x1[indice]=predict(reg0,newdata=base[indice,])
+#reg3=lm(y~x1+x2,data=base)
 ```
 
 
@@ -253,7 +256,7 @@ La méthode par défaut est "pmm", Predictive mean matching, nous allons l'utili
 
 ```{r pred_matrix}
 imp = mice(dHB, print = FALSE)
-imp$predictorMatrix
+kable((imp$predictorMatrix),format="markdown")
 
 ```
 
@@ -289,6 +292,8 @@ Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", po
 imp = mice(dHB, print = FALSE, m = 10, seed = 24415)
 fit = with(imp, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
 #with : fill in the missing data and to analyze the data
+class(imp)
+class(fit)
 est = (pool(fit))
 est
 class(est)
@@ -341,7 +346,7 @@ table(votes)
 
 ```
 
-La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont presentes. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
+La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont présentes. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
 
 ## Critères d'évaluation
 
@@ -357,7 +362,8 @@ Des méthodes sans biais et avec un bon CR sont connues comme "randomization-val
 # Annexes  
 
 ### Annexe 1.1 : graphiques exploratoires du jeu de données
-Les representations graphiques présente pour chaque variables explicatives la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
+Les representations graphiques présentent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
+
 
 ```{r angraDM}
 
@@ -442,8 +448,10 @@ title("Valeur médiane du logement et proportion de population précaire")
 par(mfrow = c(1, 2))
 RADf=factor(RAD)
 boxplot(MEDV~RADf,xlab="indice d'accessibilité aux autoroutes",ylab="valeur médiane du logement (K$)", col="green")
+abline(h=mean(MEDV), col="red")
 CHASf=factor(CHAS)
 boxplot(MEDV~CHASf,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="green")
+abline(h=mean(MEDV), col="red")
 ```
 
 ### Annexe 1.2 : corrélation entre les variables du jeu de données
@@ -468,4 +476,11 @@ dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
 
+```
+### Annexe 2.1 : lien entre les données manquantes et observées
+
+```{r DMflux}
+fluxdBH=round(as.matrix(flux(dHB)[,2:3]),2)
+#kable((fluxdBH),format="markdown",digits=3)
+kable(ifelse(((fluxdBH)<1 & (fluxdBH)>0),  cell_spec(fluxdBH, "html", color = "red", bold = T), cell_spec(fluxdBH, "html", color = "black", bold = T)), format="markdown")
 ```
