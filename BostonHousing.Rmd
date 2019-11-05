@@ -484,3 +484,4 @@ fluxdBH=round(as.matrix(flux(dHB)[,2:3]),2)
 #kable((fluxdBH),format="markdown",digits=3)
 kable(ifelse(((fluxdBH)<1 & (fluxdBH)>0),  cell_spec(fluxdBH, "html", color = "red", bold = T), cell_spec(fluxdBH, "html", color = "black", bold = T)), format="markdown")
 ```
+modif inutil
