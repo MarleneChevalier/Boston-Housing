@@ -81,6 +81,7 @@ Il s'agit de traiter les données manquantes du fichier Boston Housing. Ce fichi
 Nous utiliserons ces données pour tenter d'expliquer la valeur médiane des habitations privées (MDEV) en fonction des autres variables du fichier.
   
 # 1.Exploration des données incomplètes
+
 ## Graphiques sur les données incomplètes
 
 ```{r stat}
@@ -95,7 +96,7 @@ La valeur médiane du logement à Boston est comprise entre `r minMEDV` K$ et `r
 ```{r expl}
 
 par(mfrow = c(1, 1), pch = 16, col="blue")
-hist(MEDV,main=NULL,xlab="valeur médiane du logement(K$)", ylab="fréquence", col="green")
+hist(MEDV,main=NULL,xlab="valeur médiane du logement(K$)", ylab="fréquence", col="blue")
 abline(v=mean(MEDV), col="red")
 
 ```
@@ -134,6 +135,9 @@ Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletio
 Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
 
 **En conclusion** 
+
+Nous allons comparer maintenant ce modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir des differents méthodes. 
+
 (travail en cours)
 
 
@@ -159,7 +163,7 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
- (travail en cours) et surtout à garder? je l'aime bien mais je ne sais pas quoi dire
+ (travail en cours) 
 ```{r inventDM3}
 matrixplot(dHB,sortby=1)
 ```
@@ -217,16 +221,9 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 # 3.Traitement des données manquantes
 
-## Imputation simple
+Une méthode de traitement les données manquantes peut être la suppression des lignes avec des valeurs absentes. La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
 
-Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
-Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
-
-Nous allons ici en tester 2 : la suppression par paire et l'imputation par regression stochastique.
-
-La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
-
-Sous l’hypothèse de MCAR, les estimations de la moyenne, corrélations et covariances semblent consistants. Par contre, cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
+Cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
 ```{r modimpreg}
 mu = colMeans(dHB, na.rm = TRUE)
@@ -239,6 +236,61 @@ impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+L
 
 ```
 
+Par contre c'est une méthode à eviter, car nous allons perdre des informations et nous pouvons ajouter des biais au modèle. 
+Nous preferons continuer notre recherche sur les méthodes d'imputation.
+
+**L'imputation**
+
+L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
+
+Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
+
+1 - Décider si supposition de MAR est plausible.  
+(vu en partie 2)
+
+2 - La forme du modèle d'imputation.  
+Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables. L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
+
+3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
+
+
+```{r pred_matrix}
+imp = mice(dHB, print = FALSE)
+kable((imp$predictorMatrix),format="markdown")
+
+```
+
+Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT. Nous allons utiliser toutes les variables comme predicteurs. Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
+
+4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
+Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
+
+5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme).    
+Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
+
+
+```{r convergence}
+imp = mice(dHB, seed = 62006, maxit = 20, print = FALSE)
+plot(imp)
+
+```
+
+Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
+
+6 - La mise en place des imputations de départ et le nombre d'itérations.  
+
+7 - la taille de m, le nombre d'ensembles de données imputées.   
+Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
+
+
+## Imputation simple
+
+Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
+Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
+
+Nous allons ici en tester 3 : l'imputation par regression stochastique, le random forest et predictive mean matching.
+
+
 ### Imputation par regression stochastique
 
 Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).
@@ -248,224 +300,65 @@ impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
             seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
 summary(dHBcompl.regsto)
-regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
-summary(regregsto1)
+
+##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
+##summary(regregsto1)
 regregsto2=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
 summary(regregsto2)
 
+
 ```
 
-Avec cette méthode on observe une nouvelle fois que les deux variables INDUS et AGE peuvent sortir du modèle, et avec un R2 de 0.736, plus bas que celui que nous avions trouvé avec le listwise deletion.
+Avec cette méthode on observe un R2 ajustée de 0.736. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes.
+
+### Imputation par forêts aléatoires
+
+L'imputation par forets aléatoires
+(travail en cours)
+
+```{r modimpregsto, warning=FALSE}
+
+impforest = mice(dHB, method = "rf", m = 5, seed = 600, print=FALSE)
+
+dHBcompl.rf=complete(impforest)
+summary(dHBcompl.rf)
+##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
+##summary(regregsto1)
+regrf=lm(MEDV~.-INDUS-AGE,data=dHBcompl.rf)
+summary(regrf)
+
+
+```
+
+Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes.
+
+### Imputation par predictive mean matching
+
+```{r modpmm, warning=FALSE}
+
+imppmm = mice(dHB, method = "pmm", m = 5, seed = 600, print=FALSE)
+
+dHBcompl.pmm=complete(imppmm)
+summary(dHBcompl.pmm)
+##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
+##summary(regregsto1)
+regpmm=lm(MEDV~.-INDUS-AGE,data=dHBcompl.pmm)
+summary(regpmm)
+
+
+```
+
+Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche du modèle avec des données manquantes.
+
 
 ## Imputation multiple
-
-L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
 
 L'imputation multiple consiste en trois phases :
 1 - Imputation des données manquantes m fois
 2 - Analyse de m datasets imputés
 3 - Mise en commun des paramètres à travers m analyses
 
-Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
 
-1 - Décider si supposition de MAR est plausible.  
-(vu en partie 2)
-
-2 - La forme du modèle d'imputation.  
-Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables
-L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
-
-La méthode par défaut est "pmm", Predictive mean matching, nous allons l'utiliser et la comparer avec rf, random forest et ACP.
-
-3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
-
-
-```{r pred_matrix}
-imp = mice(dHB, print = FALSE)
-kable((imp$predictorMatrix),format="markdown")
-
-```
-
-Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT.
-Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
-
-4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
-Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
-
-5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme).    
-Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
-
-
-```{r convergence}
-imp = mice(dHB, seed = 62006, maxit = 20, print = FALSE)
-plot(imp)
-
-```
-
-Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
-
-6 - La mise en place des imputations de départ et le nombre d'itérations.  
-
-7 - la taille de m, le nombre d'ensembles de données imputées.   
-Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
-
-
-### Imputation par la moyenne 
-(en cours)
-
-
-```{r mult_imputation}
-#classic recommended workflow
-
-imp_pmm = mice(dHB, print = FALSE, m = 10, seed = 123)
-fit = with(imp_pmm, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
-#with : fill in the missing data and to analyze the data
-est = pool(fit)
-est
-
-#kable(est,format="markdown",digits=3)
-
-```
-
-
-La colonne "estimate" correspond à la valeur Q. Les colonnes "ubar", "b" et "t" sont les estimateurs des variances. "dfcom" correspond aux degrés de liberté du dataset complet, df est les degrés de liberté après la correction de Barnard-Rubin. Les trois dernières colonnes sont l'augmentation relative de la variance r, la proportion de la variance dû au non réponse λ et γ la fraction d'information manquante par paramètre. 
-
-λ est différent de 1, c'est qui pouvait arriver si toute la variation était causé par les données manquantes. 
-
-Les montants λ, r et γ, sont des indicateurs de la gravité du problème d'absence des données. Fractions d'information manquante de 0 - 0.2 sont interprétés comme "modeste", jusqu'à 0.3 comme "moyennement grand" et 0.5 comme "élevé" (Li, Raghunathan, and Rubin 1991). Des valeurs élevées indiquent un problème difficile dans lequel les inférences statistiques dépendent fortement de la manière dont les données manquantes ont été traitées. Aucune de nos valeurs n'est supérieure à 0.1, le problème est alors modeste.
-
-Des tests de Wald et des intervalles de confiance pour chaque element de Q sont des résultats standard de chaque procédure statistique. 
-
-
-### Imputation par regression stochastique
-
-Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).
-
-```{r modimpregsto}
-impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
-            seed = 600, print=FALSE)
-dHBcompl.regsto=complete(impregsto)
-summary(dHBcompl.regsto)
-regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
-summary(regregsto1)
-regregsto2=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
-summary(regregsto2)
-
-```
-
-
-```{r conf_interv}
-
-sumWald=summary(est, conf.int = TRUE)
-kable((sumWald),format="markdown",digits=3)
-#kable(ifelse((est$p.value)>0.05, cell_spec(est$p.value, "html", color = "red", bold = T), cell_spec(est$p.value, "html", color = "black", bold = T)),format="markdown",digits=3)
-
-```
-
-Selon ces résultats, il semble que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
-Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes, et l'imputation stochastique.
-
-
-## Imputation multiple
-
-L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses. 
-
-Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
-
-1 - Décider si supposition de MAR est plausible.  
-(vu en partie 2)
-
-2 - La forme du modèle d'imputation.  
-Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables
-L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
-
-La méthode par défaut est "pmm", Predictive mean matching, nous allons l'utiliser et la comparer avec rf, random forest.
-
-3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
-
-```{r pred_matrix}
-imp = mice(dHB, print = FALSE)
-kable((imp$predictorMatrix),format="markdown")
-
-```
-
-Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT.
-Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
-
-4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
-Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
-
-5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme).    
-Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
-
-```{r convergence}
-imp = mice(dHB, seed = 62006, maxit = 20, print = FALSE)
-plot(imp)
-
-```
-
-Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
-
-6 - La mise en place des imputations de départ et le nombre d'itérations.  
-
-7 - la taille de m, le nombre d'ensembles de données imputées.   
-Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
-
-
-### Imputation par la moyenne 
-
-
-```{r mult_imputation}
-#classic recommended workflow
-
-imp_pmm = mice(dHB, print = FALSE, m = 10, seed = 123)
-fit = with(imp_pmm, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
-#with : fill in the missing data and to analyze the data
-est = pool(fit)
-est
-
-#kable(est,format="markdown",digits=3)
-
-```
-
-La colonne "estimate" correspond à la valeur Q. Les colonnes "ubar", "b" et "t" sont les estimateurs des variances. "dfcom" correspond aux degrés de liberté du dataset comple, df est les degrés de liberté après la correction de Barnard-Rubin. Les trois dernières colonnes sont l'augmentation relative de la variance r, la proportion de la variance dû au non réponse λ et γ la fraction d'information manquante par paramètre. 
-
-λ est différent de 1, c'est qui pouvait arriver si toute la variation était causé par les données manquantes. 
-
-Les montants λ, r et γ, sont des indicateurs de la gravité du problème d'absence des données. Fractions d'information manquante de 0 - 0.2 sont interprétés comme "modeste", jusqu'à 0.3 comme "moyennement grand" et 0.5 comme "élevé" (Li, Raghunathan, and Rubin 1991). Des valeurs élevées indiquent un problème difficile dans lequel les inférences statistiques dépendent fortement de la manière dont les données manquantes ont été traitées.
-
-Aucune de nos valeurs n'est supérieure à 0.09, le problème est alors modeste.
-
-Des tests de Wald et des intervalles de confiance pour chaque element de Q sont des résultats standard de chaque procédure statistique. 
-
-```{r conf_interv}
-
-sumWald=summary(est, conf.int = TRUE)
-kable((sumWald),format="markdown",digits=3)
-#kable(ifelse((est$p.value)>0.05, cell_spec(est$p.value, "html", color = "red", bold = T), cell_spec(est$p.value, "html", color = "black", bold = T)),format="markdown",digits=3)
-
-```
-
-Selon ces résultats, il semble que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
-Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes.
-
-## Imputation par forêts aléatoires
-
-L'imputation par forets aléatoires
-(travail en cours)
-
-```{r forest}
-impforest = missForest(dHB,verbose = TRUE)
-class(impforest)
-
-#dHBcompl.forest=complete(impforest)
-#summary(dHBcompl.forest)
-#regforest1=lm(MEDV~.,data=dHBcompl.forest)
-#summary(regforest1)
-#regforest2=lm(MEDV~.-INDUS-AGE,data=dHBcompl.forest)
-#summary(regforest2)
-
-```
 
 ## Imputation par ACP
 (travail en cours)
