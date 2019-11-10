@@ -411,14 +411,15 @@ Voici les graphiques des variations de la moyenne et l'écart type, pour chaque 
 7 - la taille de m, le nombre d'ensembles de données imputées.   
 Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
 
-**attention la méthode est à modifier, j'ai laissé la méthode par défaut "pmm"!!!**
- 
+
+### Imputation par la moyenne 
+
 
 ```{r mult_imputation}
 #classic recommended workflow
 
-imp = mice(dHB, print = FALSE, m = 10, seed = 24415)
-fit = with(imp, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
+imp_pmm = mice(dHB, print = FALSE, m = 10, seed = 123)
+fit = with(imp_pmm, lm(MEDV~1+CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT))
 #with : fill in the missing data and to analyze the data
 est = pool(fit)
 est
@@ -448,33 +449,6 @@ kable((sumWald),format="markdown",digits=3)
 Selon ces résultats, il semble que 'INDUS' et 'AGE' ne soient pas des prédicteurs statistiquement pertinents pour prédire MEDV, avec un erreur de type 1 de 5%
 Ce résultat est cohérent par rapport aux résultats de la LM avec des données manquantes.
 
-
-##Stepwise selection
-
-L'imputation multiple consiste en trois phases :
-1 - Imputation des données manquantes m fois
-2 - Analyse de m datasets imputés
-3 - Mise en commun des paramètres à travers m analyses
-
-```{r model,results="hide"}
-
-imp = mice(dHB, seed = 123, m = 10, print = FALSE)
-scope = list(upper=~CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT,
-              lower = ~1)
-expr = expression(f1 <- lm(MEDV ~ 1),
-                   f2 <- step(f1, scope = scope))
-fit = with(imp, expr)
-
-formulas = lapply(fit$analyses, formula)
-terms = lapply(formulas, terms)
-votes = unlist(lapply(terms, labels))
-table(votes)
-
-
-```
-
-La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont présentes. Ce modèle est cohérent avec l'exclusion d'INDUS et AGE pour le modèle. 
-
 ## Imputation par forêts aléatoires
 
 L'imputation par forets aléatoires
@@ -502,14 +476,47 @@ respca = PCA(impacp$completeObs)
 respca
 ```
 
-## Critères d'évaluation
+## Selection du modèle de regression lineaire
+
+**Stepwise selection**
+
+Nous allons maintenant sélectionner le meilleur modèle, pour cela nous allons utiliser la méthode "stepwise selection"
+
+```{r model,results="hide"}
+
+##imp = mice(dHB, seed = 123, m = 10, print = FALSE)
+scope = list(upper=~CRIM + ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT,
+              lower = ~1)
+expr = expression(f1 <- lm(MEDV ~ 1),
+                   f2 <- step(f1, scope = scope))
+fit = with(imp_pmm, expr)
+
+formulas = lapply(fit$analyses, formula)
+terms = lapply(formulas, terms)
+votes = unlist(lapply(terms, labels))
+table(votes)
+
+
+```
+
+La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont présentes.
+
+
+## Critères d'évaluation de la qualité de l'imputation
 
   1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q est defini comme la différence entre l'espérance de l'estimateur et le réél. Il doit être proche de zéro.    
+ 
   2 - Coverage rate (CR). c'est la proportion des intervalles de confiance qui contiennent la valeur réelle. Il doit être proche de 0.95.  
   
   3 - Average width (AW), c'est un indicateur de l'efficacité statistique. La largeur doit être le plus petite possible, sans que le CR soit plus bas que la valeur nominale.   
 Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b). 
 
+**Graphiques de diagnostic**
+
+```{r plots_mice}
+densityplot(imp_pmm, layout = c(3, 1))
+
+```
 
 # Conclusion
 
