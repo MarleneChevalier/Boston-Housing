@@ -164,6 +164,7 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
  (travail en cours) 
+ 
 ```{r inventDM3}
 matrixplot(dHB,sortby=1)
 ```
@@ -221,7 +222,9 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 # 3.Traitement des données manquantes
 
-Une méthode de traitement les données manquantes peut être la suppression des lignes avec des valeurs absentes. La suppression par paire est une autre alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
+**Complete Cases**
+
+Une méthode de traitement les données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
 
 Cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
@@ -233,8 +236,10 @@ impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+L
               MEDV ~~ MEDV",
              sample.mean = mu, sample.cov = cv,
              sample.nobs = sum(complete.cases(dHB)))
-
+summary(impreg)
 ```
+
+Nous observons que cette méthode, comme prévu, va supprimer les lignes avec des données manquantes, donc le dataframe d'analyse a uniquement 394 lignes. Selon les résultats, INDUS et AGE peuvent sortir du modèle, elles ne sont pas representatives. 
 
 Par contre c'est une méthode à eviter, car nous allons perdre des informations et nous pouvons ajouter des biais au modèle. 
 Nous preferons continuer notre recherche sur les méthodes d'imputation.
@@ -275,12 +280,11 @@ plot(imp)
 
 ```
 
-Voici les graphiques des variations de la moyenne et l'écart type, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
+Voici les graphiques des variations de la moyenne et l'écart type, avec la méthode pmm, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. Cette convergence sera testé pour chaque modèle.
 
 6 - La mise en place des imputations de départ et le nombre d'itérations.  
 
-7 - la taille de m, le nombre d'ensembles de données imputées.   
-Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
+7 - la taille de m, le nombre d'ensembles de données imputées. L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
 
 
 ## Imputation simple
@@ -288,7 +292,7 @@ Le choix de m : L'imputation du dataset demande de faire des "essais-erreur", po
 Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
 Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
 
-Nous allons ici en tester 3 : l'imputation par regression stochastique, le random forest et predictive mean matching.
+Nous allons ici en tester 3 : l'imputation par regression stochastique, le random forest et predictive mean matching. Pour les trois méthodes nous allons les appliquer à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats précèdents.  
 
 
 ### Imputation par regression stochastique
@@ -313,10 +317,10 @@ Avec cette méthode on observe un R2 ajustée de 0.736. Proche mais plus bas que
 
 ### Imputation par forêts aléatoires
 
-L'imputation par forets aléatoires
-(travail en cours)
+Avec cette méthode, pour les variables continues les valeurs son imputées en faisant des tirages aléatoires à partir des distributions gaussiens independants, centrées en les moyennes prédites par les forêts aléatoires.
 
-```{r modimpregsto, warning=FALSE}
+
+```{r modimpforest, warning=FALSE}
 
 impforest = mice(dHB, method = "rf", m = 5, seed = 600, print=FALSE)
 
@@ -330,9 +334,11 @@ summary(regrf)
 
 ```
 
-Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes.
+Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes. Les valeus estimées restent aussi très proches.
 
 ### Imputation par predictive mean matching
+
+La méthode pmm est très répandue car elle est facile à utiliser, elle forme un petit ensemble des donneurs à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes.
 
 ```{r modpmm, warning=FALSE}
 
@@ -382,7 +388,7 @@ scope = list(upper=~CRIM + ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT,
               lower = ~1)
 expr = expression(f1 <- lm(MEDV ~ 1),
                    f2 <- step(f1, scope = scope))
-fit = with(imp_pmm, expr)
+fit = with(imppmm, expr)
 
 formulas = lapply(fit$analyses, formula)
 terms = lapply(formulas, terms)
@@ -407,7 +413,7 @@ Des méthodes sans biais et avec un bon CR sont connues comme "randomization-val
 **Graphiques de diagnostic**
 
 ```{r plots_mice}
-densityplot(imp_pmm, layout = c(3, 1))
+densityplot(imppmm, layout = c(3, 1))
 
 ```
 
@@ -538,4 +544,4 @@ fluxdBH=round(as.matrix(flux(dHB)[,2:3]),2)
 #kable((fluxdBH),format="markdown",digits=3)
 kable(ifelse(((fluxdBH)<1 & (fluxdBH)>0),  cell_spec(fluxdBH, "html", color = "red", bold = T), cell_spec(fluxdBH, "html", color = "black", bold = T)), format="markdown")
 ```
-modif inutil
+
