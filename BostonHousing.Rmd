@@ -40,6 +40,7 @@ library(missMDA)
 library(VIM)
 library(MASS)
 library(stats)
+library(micemd)
 
 library(plotly)
 library(fitdistrplus)
@@ -50,7 +51,6 @@ library(lavaan)
 library(kableExtra)
 library(dplyr)
 library(missForest)
-library(Amelia)
 
 # options globales
 opts_chunk$set(echo=FALSE)
@@ -225,7 +225,7 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 **Complete Cases**
 
-Une méthode de traitement les données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
+Une méthode de traitement des données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
 
 Cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
@@ -240,12 +240,12 @@ impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+L
 summary(impreg)
 ```
 
-Nous observons que cette méthode, comme prévu, va supprimer les lignes avec des données manquantes, donc le dataframe d'analyse a uniquement 394 lignes. Selon les résultats, INDUS et AGE peuvent sortir du modèle, elles ne sont pas representatives. 
+Nous observons que cette méthode, comme prévu, va supprimer les lignes avec des données manquantes, donc le dataframe d'analyse a uniquement 394 lignes. Selon les résultats du p-value, INDUS et AGE peuvent sortir du modèle, elles ne sont pas representatives. 
 
 Par contre c'est une méthode à eviter, car nous allons perdre des informations et nous pouvons ajouter des biais au modèle. 
 Nous preferons continuer notre recherche sur les méthodes d'imputation.
 
-**L'imputation**
+**L'imputation - méthodologie**
 
 L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
 
@@ -296,7 +296,7 @@ Plusieurs solutions sont possibles (remplacer les données manquantes par la moy
 Nous allons ici en tester 3 : l'imputation par regression stochastique, le random forest et predictive mean matching. Pour les trois méthodes nous allons les appliquer à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats précèdents.  
 
 
-### Imputation par regression stochastique
+### Imputation par régression stochastique
 
 Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).
 
@@ -357,6 +357,43 @@ summary(regpmm)
 
 Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche du modèle avec des données manquantes.
 
+**Diagnostic**
+
+Un premier diagnostic à réaliser est de vérifier que la distribution des données imputées est similaire à celle des données d'origine. 
+
+```{r diagnostics1}
+
+densityplot(impregsto, main="Régression Stochastique", layout = c(2, 3))
+densityplot(impforest, main="Forêts aléatoires", layout = c(2, 3))
+densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
+```
+
+Pour la variable CRIM, aucune méthode ne semble pas bien arriver à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, les trois méthodes semblent bien arriver à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vrai distribution.
+
+Un deuxième diagnostic consiste en vérifier la convergence des 3 algorithmes. 
+
+```{r diagnostics2, warning=FALSE}
+plot(impregsto, main="Régression Stochastique", layout = c(2, 3))
+plot(impforest, main="Forêts aléatoires", layout = c(2, 3))
+plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
+```
+Les trois méthodes semblent bien converger sans montrer aucune tendance.
+
+En dernier, nous allons vérifier l'ajustement du modèle d'imputation.
+(en cours je n'arrive pas encore a le faire)
+
+```{r diagnostics3}
+
+#overimpute(impregsto, nnodes = 5)
+
+##overimpute(impforest, main="Forêts aléatoires", layout = c(2, 3))
+##overimpute(imppmm, main="Predictive mean matching", layout = c(2, 3))
+```
+
+**Conclusion**
+
+Les résultats des trois modes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajustée.
+(en cours)
 
 ## Imputation multiple
 
@@ -394,15 +431,6 @@ summary(pool(fitMIPCA))
 
 ```
 
-
-## Critères d'évaluation de la qualité de l'imputation
-
-  1 - Raw bias (RB) and percent bias (PB). Le biais brut de Q est defini comme la différence entre l'espérance de l'estimateur et le réél. Il doit être proche de zéro.    
- 
-  2 - Coverage rate (CR). c'est la proportion des intervalles de confiance qui contiennent la valeur réelle. Il doit être proche de 0.95.  
-  
-  3 - Average width (AW), c'est un indicateur de l'efficacité statistique. La largeur doit être le plus petite possible, sans que le CR soit plus bas que la valeur nominale.   
-Des méthodes sans biais et avec un bon CR sont connues comme "randomization-valid" (Rubin 1987b). 
 
 **Graphiques de diagnostic**
 
