@@ -50,6 +50,7 @@ library(lavaan)
 library(kableExtra)
 library(dplyr)
 library(missForest)
+library(Amelia)
 
 # options globales
 opts_chunk$set(echo=FALSE)
@@ -366,56 +367,32 @@ L'imputation multiple consiste en trois phases :
 3 - Mise en commun des paramètres à travers m analyses
 
 
-
 ## Imputation par ACP
 
-Nous alloms gerer les données manquants en utilisant la ACP (Analyse des composants principales), en generant plusieurs tableaux completés. Il va initialiser le tableau en faisant une imputation par la moyenne, on va ensuite contruire l'ACP avec le tableau completé, choisir le nombre des dimensions, les données manquantes sont imputés par ACP et le moyennes et écarts types sont mis à jour. Les étapes sont ensuite repetées jusqu'à convergence.
+Nous alloms gerer les données manquants en utilisant la ACP (Analyse des composants principales), en generant plusieurs tableaux completés.
 
 ** tu avais fait la PCA avec des données manquantes, mais non l'imputation par ACP**
 ```{r pca}
 nb = estim_ncpPCA(dHB,ncp.min=0,ncp.max=6)
-
-##imputed <- imputePCA(dHB,ncp=nb$ncp, nboot=1000)
-##res.pca <- PCA(imputed$completeObs)
-
-resMI <- MIPCA(dHB,ncp=2)
-
-plot(resMI)
+resMIPCA <- MIPCA(dHB,ncp=2, nboot=100)
+plot(resMIPCA,choice= "var")
 
 ```
+
+Ce graphique represente la projection des individus pour chaque dataset imputé, avec l'algorithme iterative de l'ACP. Nous voyoms au'il y a très peu d'incertitude sur les variables (les nuages des points sont très rapprochés)
+
+Regression linéaire avec ACP
 
 ```{r lm_pca}
+imp.mice <- mice(dHB, m=10,defaultMethod="norm.boot") 
+lm.mice.out <- with(imp.mice, lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
 
-regpca=lm(MEDV~.-INDUS-AGE,data=imputed)
-summary(regpca)
-
-
-```
-
-## Selection du modèle de regression lineaire
-
-**Stepwise selection**
-
-Nous allons maintenant sélectionner le meilleur modèle, pour cela nous allons utiliser la méthode "stepwise selection"
-
-```{r model,results="hide"}
-
-##imp = mice(dHB, seed = 123, m = 10, print = FALSE)
-scope = list(upper=~CRIM + ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT,
-              lower = ~1)
-expr = expression(f1 <- lm(MEDV ~ 1),
-                   f2 <- step(f1, scope = scope))
-fit = with(imppmm, expr)
-
-formulas = lapply(fit$analyses, formula)
-terms = lapply(formulas, terms)
-votes = unlist(lapply(terms, labels))
-table(votes)
-
+resMIPCA <- lapply(resMIPCA$res.MI, as.data.frame)
+fitMIPCA<-lapply(resMIPCA,lm, formula="MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT")
+poolMIPCA<-pool(as.mira(fitMIPCA))
+summary(pool(fitMIPCA))
 
 ```
-
-La fonction table compte le nombre de fois que chaque variable est présente dans les itérations. Le meilleur modèle semble être quand les 10 variables (B, CHAS, CRIM, DIS, LSTAT, NOX, PTRATIO, RAD, RM, TAX et ZN) sont présentes.
 
 
 ## Critères d'évaluation de la qualité de l'imputation
@@ -429,9 +406,11 @@ Des méthodes sans biais et avec un bon CR sont connues comme "randomization-val
 
 **Graphiques de diagnostic**
 
+Ici il faut comparer les graphiques de densite des variables + convergence des modeles avant de selectionner le meilleur (en cours)
 ```{r plots_mice}
-densityplot(imppmm, layout = c(3, 1))
-
+##densityplot(imppmm, layout = c(3, 1))
+##overimpute(res.amelia, var = "maxO3")
+##compare.density(res.amelia, var = "T12")
 ```
 
 # Conclusion
