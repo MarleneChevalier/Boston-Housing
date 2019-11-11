@@ -338,7 +338,7 @@ Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que
 
 ### Imputation par predictive mean matching
 
-La méthode pmm est très répandue car elle est facile à utiliser, elle forme un petit ensemble des donneurs à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes.
+La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un petit ensemble des "donneurs" à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes. Un donneur est pris aléatoirement et la valeur observée remplace la donnée manquante. 
 
 ```{r modpmm, warning=FALSE}
 
@@ -360,6 +360,7 @@ Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche d
 ## Imputation multiple
 
 L'imputation multiple consiste en trois phases :
+
 1 - Imputation des données manquantes m fois
 2 - Analyse de m datasets imputés
 3 - Mise en commun des paramètres à travers m analyses
@@ -367,12 +368,28 @@ L'imputation multiple consiste en trois phases :
 
 
 ## Imputation par ACP
-(travail en cours)
+
+Nous alloms gerer les données manquants en utilisant la ACP (Analyse des composants principales), en generant plusieurs tableaux completés. Il va initialiser le tableau en faisant une imputation par la moyenne, on va ensuite contruire l'ACP avec le tableau completé, choisir le nombre des dimensions, les données manquantes sont imputés par ACP et le moyennes et écarts types sont mis à jour. Les étapes sont ensuite repetées jusqu'à convergence.
+
+** tu avais fait la PCA avec des données manquantes, mais non l'imputation par ACP**
 ```{r pca}
-nb = estim_ncpPCA(dHB,ncp.max=6)
-impacp = imputePCA(dHB,ncp=6)
-respca = PCA(impacp$completeObs) 
-respca
+nb = estim_ncpPCA(dHB,ncp.min=0,ncp.max=6)
+
+##imputed <- imputePCA(dHB,ncp=nb$ncp, nboot=1000)
+##res.pca <- PCA(imputed$completeObs)
+
+resMI <- MIPCA(dHB,ncp=2)
+
+plot(resMI)
+
+```
+
+```{r lm_pca}
+
+regpca=lm(MEDV~.-INDUS-AGE,data=imputed)
+summary(regpca)
+
+
 ```
 
 ## Selection du modèle de regression lineaire
