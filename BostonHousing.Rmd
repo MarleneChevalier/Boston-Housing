@@ -402,7 +402,7 @@ Le dernier pour la predictive mean matching
 res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-**sans la variable CHAS je ne sais pas pourquoi**
+Comme CHAS n'est pas une variable continue, elle prends uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques. 
 
 On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour les trois méthodes. Cependant ce n'est pas les cas pour les variables CRIM et ZN
 
@@ -425,38 +425,42 @@ L'imputation multiple consiste en trois phases :
 
 Nous alloms gerer les données manquants en utilisant la ACP (Analyse des composants principales), en generant plusieurs tableaux completés.
 
-** tu avais fait la PCA avec des données manquantes, mais non l'imputation par ACP**
+D'abord nous allons chercher le nombre des dimensions
+```{r dim_pca}
+nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
+plot(names(nb.kfold$criterion),nb.kfold$criterion,type="b")
+```
+
+Selon le graphique, le nombre de dimensions sera 3
+
 ```{r pca}
-nb = estim_ncpPCA(dHB,ncp.min=0,ncp.max=6)
-resMIPCA <- MIPCA(dHB,ncp=2, nboot=100)
-plot(resMIPCA,choice= "var")
+res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=TRUE,method.mi = "Bayes")
+res.overmipca = Overimpute(res.bayesMIPCA)
 
 ```
 
-Ce graphique represente la projection des individus pour chaque dataset imputé, avec l'algorithme iterative de l'ACP. Nous voyoms au'il y a très peu d'incertitude sur les variables (les nuages des points sont très rapprochés)
+Selon les graphiques les intervalles touchent tous la ligne diagonal, sauf pour les plus grands valeurs de CRIM. Il semblerait que cette méthode est plus appropié pour faire de l'imputation sur notre dataset. 
 
-Regression linéaire avec ACP
+```{r pca2}
+
+plot(res.bayesMIPCA, choice = "var")
+
+```
+
+Ce graphique represente la projection des individus pour chaque dataset imputé, avec l'algorithme iterative de l'ACP. Nous voyons qu'il y a très peu d'incertitude sur les variables (les nuages des points sont très rapprochés)
+
+**Regression linéaire**
 
 ```{r lm_pca}
-imp.mice <- mice(dHB, m=10,defaultMethod="norm.boot") 
-lm.mice.out <- with(imp.mice, lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
+imppca <- prelim(res.mi = res.bayesMIPCA, X = dHB)
+fit <- with(data=imppca,exp = lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
 
-resMIPCA <- lapply(resMIPCA$res.MI, as.data.frame)
-fitMIPCA<-lapply(resMIPCA,lm, formula="MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT")
-poolMIPCA<-pool(as.mira(fitMIPCA))
-summary(pool(fitMIPCA))
+res.pool<-pool(fit)
+summary(res.pool)
 
 ```
 
-
-**Graphiques de diagnostic**
-
-Ici il faut comparer les graphiques de densite des variables + convergence des modeles avant de selectionner le meilleur (en cours)
-```{r plots_mice}
-##densityplot(imppmm, layout = c(3, 1))
-##overimpute(res.amelia, var = "maxO3")
-##compare.density(res.amelia, var = "T12")
-```
+Les valeurs des estimateurs sont très proches aux ceux trouvés par l'imputation simple, mais les imputations respectent mieux la distribution avec cette méthode. 
 
 # Conclusion
 
