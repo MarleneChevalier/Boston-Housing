@@ -164,15 +164,17 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
- (travail en cours) 
- 
+Voici une deuxième representation des données manquantes, avec matrixplot. Elle permet d'identifier des dépendences, des patterns des valeurs extrêmes et des données manquantes. Les données observés sont dans une échelle de gris et les manquantes en rouge. Les petits valeurs sont plus claires, et les valeurs plus grands en gris foncé.
+
 ```{r inventDM3}
-matrixplot(dHB,sortby=1)
+matrixplot(dHB,sortby="MEDV")
 ```
+
+Nous pouvons observer qu'il n'y pas des outliers dans le dataframe et les valeurs manquantes semblent bien se repartir dans l'ensemble. 
  
 ## Proportion de données manquantes
 
-La fonction **aggr** permet d'appréhender les données par leur proportion dans le jeucomplet.
+La fonction **aggr** permet d'appréhender les données par leur proportion dans le jeu complet.
 
 ```{r inventDM2}
 aggr(dHB,numbers=TRUE,bars=FALSE)
@@ -184,7 +186,7 @@ En sortie, 2 graphiques :
   - Le graphique de droite donne la proportion de chaque structure de données.   
 Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
 
-## Lien variables manquantes / variables observées
+## Lien variables manquantes / variables observées (** à garder cette partie? trop repetitive peut-être**)
 
 Le lien entre les variables maquantes et observées peut se mesurer par le tableau des "influx" et "outflux": fonction **flux**. Ces 2 statististiques permettent de quantifier la connexion entre les données observées et les données manquantes. 
 
@@ -223,7 +225,7 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 # 3.Traitement des données manquantes
 
-**Complete Cases**
+**Créer des dataframes complets**
 
 Une méthode de traitement des données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
 
@@ -271,17 +273,7 @@ Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres 
 4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
 Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
 
-5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme).    
-Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. 
-
-
-```{r convergence}
-imp = mice(dHB, seed = 62006, maxit = 20, print = FALSE)
-plot(imp)
-
-```
-
-Voici les graphiques des variations de la moyenne et l'écart type, avec la méthode pmm, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. Cette convergence sera testé pour chaque modèle.
+5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme). Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. L'ordre est à changer si nous avons des soucis de convergence des algorithmes. 
 
 6 - La mise en place des imputations de départ et le nombre d'itérations.  
 
@@ -291,9 +283,9 @@ Voici les graphiques des variations de la moyenne et l'écart type, avec la mét
 ## Imputation simple
 
 Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
-Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution, la variable est sous-estimée, entre autres problèmes. 
+Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution des variables, la variable peut-être sous-estimée, entre autres problèmes. 
 
-Nous allons ici en tester 3 : l'imputation par regression stochastique, le random forest et predictive mean matching. Pour les trois méthodes nous allons les appliquer à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats précèdents.  
+Nous allons ici en tester 3 méthodes d'imputation simple : l'imputation par regression stochastique, les forêts aléatoires et le predictive mean matching. Nous allons appliquer les trois méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdents. (Annexe 1.4)
 
 
 ### Imputation par régression stochastique
@@ -323,7 +315,7 @@ Avec cette méthode, pour les variables continues les valeurs son imputées en f
 
 ```{r modimpforest, warning=FALSE}
 
-impforest = mice(dHB, method = "rf", m = 5, seed = 600, print=FALSE)
+impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
 
 dHBcompl.rf=complete(impforest)
 summary(dHBcompl.rf)
@@ -335,7 +327,7 @@ summary(regrf)
 
 ```
 
-Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes. Les valeus estimées restent aussi très proches.
+Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes. Les valeus estimées et les residus restent aussi très proches.
 
 ### Imputation par predictive mean matching
 
@@ -343,7 +335,7 @@ La méthode pmm est très répandue car elle est facile à utiliser, elle sélec
 
 ```{r modpmm, warning=FALSE}
 
-imppmm = mice(dHB, method = "pmm", m = 5, seed = 600, print=FALSE)
+imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
 
 dHBcompl.pmm=complete(imppmm)
 summary(dHBcompl.pmm)
@@ -355,7 +347,8 @@ summary(regpmm)
 
 ```
 
-Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche du modèle avec des données manquantes.
+Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeus estimées et les residus restent aussi très proches.
+
 
 **Diagnostic**
 
@@ -377,23 +370,47 @@ plot(impregsto, main="Régression Stochastique", layout = c(2, 3))
 plot(impforest, main="Forêts aléatoires", layout = c(2, 3))
 plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 ```
+
+Voici les graphiques des variations de la moyenne et l'écart type, avec les trois méthodes, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
+
 Les trois méthodes semblent bien converger sans montrer aucune tendance.
 
-En dernier, nous allons vérifier l'ajustement du modèle d'imputation.
-(en cours je n'arrive pas encore a le faire)
+En dernier, nous allons vérifier l'ajustement du modèle d'imputation, en utilisant le graph d'overimputation. Dans ce cas, chaque donnée observée et supprimée et pour chaque, 100 valeurs sont predits (en utilisant la même méthode d'imputation choisie) et la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs. 
 
-```{r diagnostics3}
+Sur ces graphiques, la ligne y=x apparaît pour indiquer où les imputations devraient être si elles étaient parfaites, ainsi que les points et les intervalles de confiance pour chaque valeur. On espère que 90% des intervalles doivent passer par cette ligne y=x. La couleur des intervalles represente la fraction des données manquantes (entre 0 - 20% pour notre cas)
 
-#overimpute(impregsto, nnodes = 5)
+Voici le graphique pour la regression stochastique :
 
-##overimpute(impforest, main="Forêts aléatoires", layout = c(2, 3))
-##overimpute(imppmm, main="Predictive mean matching", layout = c(2, 3))
+```{r diagnostics3a, warning=FALSE}
+
+res.over1<-overimpute(impregsto,nnodes=7,plotvars = c(1,2,3,4,7,13),plotinds=sample(x = seq(nrow(dHB)),size = 100))
+
 ```
+
+Le graphique pour les forêts aléatoires
+
+```{r diagnostics3b, warning=FALSE}
+
+res.over2<-overimpute(impforest,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
+
+```
+
+Le dernier pour la predictive mean matching
+
+```{r diagnostics3c, warning=FALSE}
+
+res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
+```
+
+**sans la variable CHAS je ne sais pas pourquoi**
+
+On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour les trois méthodes. Cependant ce n'est pas les cas pour les variables CRIM et ZN
 
 **Conclusion**
 
-Les résultats des trois modes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajustée.
-(en cours)
+Les résultats des trois modes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajustée.Cependant la méthode des forêts aléatoires semble mieux respecter la distribution des variables. 
+
+Nous allons maintenant faire de l'imputation multiple pour pouvoir comparer les résultats. 
 
 ## Imputation multiple
 
