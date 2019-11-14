@@ -32,7 +32,7 @@ font-weight:bold;
 
 
 
-```{r setup, include=FALSE}
+```{r setup, warning=FALSE, include=FALSE}
 
 #packages utilisés
 library(knitr)
@@ -53,7 +53,7 @@ library(dplyr)
 library(missForest)
 
 # options globales
-opts_chunk$set(echo=TRUE)
+opts_chunk$set(echo=FALSE,warning=FALSE)
 
 # chargement des données
 dHB=read.table("HousingData.csv",sep=",",header=TRUE)
@@ -129,24 +129,34 @@ Les corrélations les plus significatives de la valeur du logement sont avec :
 (*cf. annexe 1.2*)
 
 ## Modélisation sur les données incomplètes
+
 Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
 
-Nous voudrions maintenant utiliser la méthode "stepwise" pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
+Nous voudrions maintenant utiliser la méthode **stepwise** pour choisir le meilleur modèle. Cependant, cette méthode ne fonctionne pas s'il y a des données manquantes. 
 Afin de pouvoir l'utiliser, nous allons appliquer une méthode "listwise deletion" avec le risque de perte d'information et d'introduction de biais au dataset.   
 Ce modèle écarte les variables INDUS et AGE, comme l'original, avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
 
-**En conclusion** 
+## En conclusion sur l'exploration de données
+La valeur médiane du logement à Boston et ses environs est comprise entre 5K$ et 50K$. Sa distribution est croissante jusqu'a sa valeur moyenne (22.5K$) puis décroit fortement à partir de 25 K$.  
+**La valeur du logement est influencée ** (p_value <5%): 
 
-Nous allons comparer maintenant ce modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir des differents méthodes. 
+  **- positivement** principalement (coefficient estimé = 4.2) **par le nombre de chambres** et plus faiblement (coefficients estimés de 0.28 et 0.05) **par l'accessibilité aux autoroutes et la proportion de terrain résidentiel**   
+  
+  **- négativement** principalement (coefficient estimé = -18.5) **par la concentration en oxyde d'azote** et plus faiblement (coefficients estimés entre de -1.42 et -0.01) **par la distance aux centres d'emplois, le ration élèves-enseignants, la proportion de population précaire et le taux foncier**   
+Le R² du modèle de regression sur jeu de données incomplet est de **0.76 (R² de référence)**.    
+(**cf. annexe 1.4** : résultat de la regression linéaire après selection de variable)
 
-(travail en cours)
+Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**).
+
+Nous allons comparer maintenant ce modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
 
 
 # 2.Inventaire des données manquantes 
+Il s'agit ici d'identifier les données manquantes par variable, représenter leur structure dans le jeu de données.
 
 ## Structure des données manquantes
 
-Nous allons utiliser la fonction **md.pattern** du package mice pour analyser les données manquantes. Le résultat est une matrice, dans laquelle chaque ligne correspond à des structures de données manquantes et chaque colonne à une variable du fichier. Les lignes et les colonnes sont triées selon le niveau de complétude des données.   
+La fonction **md.pattern** du package a pour résultat une matrice, dans laquelle chaque ligne correspond à des structures de données manquantes et chaque colonne à une variable du fichier. Les lignes et les colonnes sont triées selon le niveau de complétude des données.   
 A chaque ligne de la matrice (qui définit une structure de données manquantes du jeu de données) :  
 
   - la première colonne indique le nombre d'observations correspondant à la structure de données manquantes décrite ;    
@@ -164,13 +174,13 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
-Voici une deuxième representation des données manquantes, avec matrixplot. Elle permet d'identifier des dépendences, des patterns des valeurs extrêmes et des données manquantes. Les données observés sont dans une échelle de gris et les manquantes en rouge. Les petits valeurs sont plus claires, et les valeurs plus grands en gris foncé.
+Voici une deuxième representation des données manquantes obtenue avec **matrixplot**. Elle permet d'identifier des dépendences des valeurs extrêmes et des données manquantes. Les données observées sont en gris et les manquantes en rouge. 
 
 ```{r inventDM3}
 matrixplot(dHB,sortby="MEDV")
 ```
 
-Nous pouvons observer qu'il n'y pas des outliers dans le dataframe et les valeurs manquantes semblent bien se repartir dans l'ensemble. 
+Nous pouvons observer que les valeurs manquantes se repartissent bien dans l'ensemble du jeu de données.
  
 ## Proportion de données manquantes
 
@@ -186,17 +196,6 @@ En sortie, 2 graphiques :
   - Le graphique de droite donne la proportion de chaque structure de données.   
 Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
 
-## Lien variables manquantes / variables observées (** à garder cette partie? trop repetitive peut-être**)
-
-Le lien entre les variables maquantes et observées peut se mesurer par le tableau des "influx" et "outflux": fonction **flux**. Ces 2 statististiques permettent de quantifier la connexion entre les données observées et les données manquantes. 
-
-L'**influx d'une variable** dépend de la proportion de données manquantes de la variable. L'influx d'une variable complètement observée est égal à 0, alors que pour les variables complètement manquantes, l'influx est à 1. A proportion de données maquantes équivalentes, la variable avec le plus fort influx sera la mieux connectée aux données observées et sera donc la plus facile à imputer.
-
-L'**outflux d'une variable** indique l'importance des valeurs observées pour imputer les valeur manquantes. L'outflux d'une variable complètement observée est égal à 1, tandis que l'outflux d'une variable complètement manquante est égal à 0. Pour deux variables ayant la même proportion de données manquantes, la variable avec un ouflux plus élevé est mieux connectée aux données manquantes, et donc potentiellement plus utile pour imputer d'autres variables.  
-(*cf. annexe 2.1*)
-
-Ici, les variables CRIM, ZN, INDUS, CHAS, AGE, LSTAT ont un influx supérieur à 0 (0.04) et un outflux est inférieur à 1 (0.8), ce qui confirme qu'elles sont incomplètes. Les autres variables sont complétement renseignées (influx=0 et outflux=1).
-
 ## Catégories de données manquantes
 
 Rubin (1976) a classé les problèmes des données manquantes en trois catégories :  
@@ -208,7 +207,7 @@ Rubin (1976) a classé les problèmes des données manquantes en trois catégori
 La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR. Dans le cas du jeu de données Boston Housing, on peut aussi partir de cette hypothèse (il nous manque que 22% des données , donc ici nous sommes loin du point problèmatique du 50%)
 
 
-**En conclusion**  
+## En conclusion sur l'inventaire des données manquantes 
 
   - 6 variables sont incomplètes, avec chacune 20 données manquantes (soit 120 au total) :
 
@@ -225,251 +224,184 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 # 3.Traitement des données manquantes
 
-**Créer des dataframes complets**
+## Méthode de suppression
 
-Une méthode de traitement des données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
-
+Une méthode de traitement des données manquantes peut être la suppression des lignes avec des valeurs absentes, pour avoir un dataset complet. La suppression par paire **lavaan** est une alternative à la suppression simple des lignes avec des données manquantes. Avec cette méthode, il faut calculer la moyenne, variance et covariance de toutes les données observées.
 Cette méthode pourrait poser des problèmes sur les variables très corrélées entre elles et si les données ne suivent pas une distribution normale. 
 
-```{r modimpreg}
-mu = colMeans(dHB, na.rm = TRUE)
-cv = cov(dHB, use = "pairwise")
-
-impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
-              MEDV ~~ MEDV",
-             sample.mean = mu, sample.cov = cv,
-             sample.nobs = sum(complete.cases(dHB)))
-summary(impreg)
-```
-
-Nous observons que cette méthode, comme prévu, va supprimer les lignes avec des données manquantes, donc le dataframe d'analyse a uniquement 394 lignes. Selon les résultats du p-value, INDUS et AGE peuvent sortir du modèle, elles ne sont pas representatives. 
+Nous observons que cette méthode, comme prévu, va supprimer les lignes avec des données manquantes, donc le dataframe d'analyse se réduit à 394 lignes. Selon les résultats du p-value, INDUS et AGE (p-value > 5%) ne sont pas representatives ; elles peuvent donc sortir du modèle (**cf.annexe 3.1**).  
 
 Par contre c'est une méthode à eviter, car nous allons perdre des informations et nous pouvons ajouter des biais au modèle. 
-Nous preferons continuer notre recherche sur les méthodes d'imputation.
-
-**L'imputation - méthodologie**
-
-L'imputation correspond à l'action de convertir un échantillon non complet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
-
-Nous avons 7 choix à faire pour specifier le modèle à utiliser pour l'imputation des données :
-
-1 - Décider si supposition de MAR est plausible.  
-(vu en partie 2)
-
-2 - La forme du modèle d'imputation.  
-Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables. L'algorithm MICE a besoin d'avoir un méthode univarié d'imputation pour chaque variable incomplète. 
-
-3 - Le groupe de variables à inclure comme predicteurs dans le modèle d'imputation. 
-
-
-```{r pred_matrix}
-imp = mice(dHB, print = FALSE)
-kable((imp$predictorMatrix),format="markdown")
-
-```
-
-Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables; pareil pour ZN, INDUS, CHAS, AGE et LSTAT. Nous allons utiliser toutes les variables comme predicteurs. Cela est possible car le dataset est encore de taille raisonable, pour des grands datasets cela pourrait ne pas être possible, à cause de la multicolinearité ou de la capacité des machines. 
-
-4 - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
-Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
-
-5 - L'ordre d'imputation des variables (influe sur la convergence de l'algorithme). Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. L'ordre est à changer si nous avons des soucis de convergence des algorithmes. 
-
-6 - La mise en place des imputations de départ et le nombre d'itérations.  
-
-7 - la taille de m, le nombre d'ensembles de données imputées. L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
-
+Nous préférons continuer notre recherche sur les méthodes d'imputation.
 
 ## Imputation simple
 
-Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une donnée prédite ou simulée. 
+Les méthodes d'imputation simples consistent à remplacer chaque valeur maquante par une valeur unique prédite ou simulée. 
 Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution des variables, la variable peut-être sous-estimée, entre autres problèmes. 
 
-Nous allons ici en tester 3 méthodes d'imputation simple : l'imputation par regression stochastique, les forêts aléatoires et le predictive mean matching. Nous allons appliquer les trois méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdents. (Annexe 1.4)
+Nous allons ici en tester 2 méthodes d'imputation simple : l'imputation par regression stochastique, les forêts aléatoires . Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdentes. 
 
 
 ### Imputation par régression stochastique
 
-Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).
+Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).  
+fonction **mice ( avec method = "norm.nob")**
+(cf. **annnexe 3.3**)
 
 ```{r modimpregsto}
 impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
             seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
-summary(dHBcompl.regsto)
-
-##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
-##summary(regregsto1)
-regregsto2=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
-summary(regregsto2)
-
-
 ```
-
-Avec cette méthode on observe un R2 ajustée de 0.736. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes.
+Avec cette méthode, on observe un R2 ajusté de 0.736. Proche mais plus bas que le R2 ajusté de la regression faite avec les données manquantes.
 
 ### Imputation par forêts aléatoires
 
-Avec cette méthode, pour les variables continues les valeurs son imputées en faisant des tirages aléatoires à partir des distributions gaussiens independants, centrées en les moyennes prédites par les forêts aléatoires.
+Avec cette méthode, pour les variables continues les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires.  
+fonction **mice ( avec method = "rf")**
 
-
-```{r modimpforest, warning=FALSE}
+```{r modimpforest}
 
 impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
-
 dHBcompl.rf=complete(impforest)
 summary(dHBcompl.rf)
-##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
-##summary(regregsto1)
 regrf=lm(MEDV~.-INDUS-AGE,data=dHBcompl.rf)
 summary(regrf)
 
-
 ```
 
-Avec cette méthode on observe un R2 ajustée de 0.734. Proche mais plus bas que le R2 ajustée de la regression faite avec les données manquantes. Les valeus estimées et les residus restent aussi très proches.
+Avec cette méthode on observe un R2 ajusté de 0.73. Proche mais plus bas que le R2 ajuste de la regression faite avec les données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+
+
+## Imputation multiple
+
+L'imputation multiple consiste en trois phases :
+
+**Etape 1** : Imputation des données manquantes m fois  
+**Etape 2** : Analyse de m datasets imputés  
+**Etape 3** : Mise en commun des paramètres à travers m analyses  
 
 ### Imputation par predictive mean matching
 
-La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un petit ensemble des "donneurs" à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes. Un donneur est pris aléatoirement et la valeur observée remplace la donnée manquante. 
+La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un petit ensemble des "donneurs" à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes. Un donneur est pris aléatoirement et la valeur observée remplace la donnée manquante.   
+fonction **mice ( avec method = "pmm")**
 
-```{r modpmm, warning=FALSE}
-
+```{r modpmm}
 imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
-
 dHBcompl.pmm=complete(imppmm)
 summary(dHBcompl.pmm)
-##regregsto1=lm(MEDV~.,data=dHBcompl.regsto)
-##summary(regregsto1)
 regpmm=lm(MEDV~.-INDUS-AGE,data=dHBcompl.pmm)
 summary(regpmm)
 
+```
+
+Pareil que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+
+## Imputation par ACP
+
+Les données manquantes sont imputées en utilisant la ACP (Analyse des composants principales). Il s'agit :  
+
+   - d'estimer le nombre de dimensions utilisées dans la formule de reconstruction avec la fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
+  
+```{r dim_pca}
+nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
+plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",type="b")
+```
+Selon le graphique, le nombre de dimensions sera 3.
+
+   - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé  
+  fonction **MIPCA (avec method.mi = "Bayes")**  
+  
+   - visualiser les ensembles de données imputées avec la fonction plot.MIPCA  
+  
+```{r pca}
+res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=TRUE,method.mi = "Bayes")
+res.overmipca = Overimpute(res.bayesMIPCA)
+#plot.MIPCA(res.bayesMIPCA) 
+
+```
+Selon les graphiques les intervalles touchent tous la ligne diagonale, sauf pour les plus grandes valeurs de CRIM. Il semblerait que cette méthode soit plus appropiée pour faire de l'imputation sur notre dataset. 
+
+**Regression linéaire sur le jeu de données complété par MIPCA**
+
+```{r lm_pca}
+imppca= prelim(res.mi = res.bayesMIPCA, X = dHB)
+fit= with(data=imppca,exp = lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
+res.pool=pool(fit)
+summary(res.pool)
 
 ```
 
-Pareil que pour les deux méthodes précedents, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeus estimées et les residus restent aussi très proches.
+Les valeurs des estimateurs sont très proches aux celles trouvées par l'imputation simple, mais les imputations multiples respectent mieux la distribution avec cette méthode. 
 
+# 4. Diagnostics et conclusion
 
-**Diagnostic**
-
-Un premier diagnostic à réaliser est de vérifier que la distribution des données imputées est similaire à celle des données d'origine. 
+## Diagnostic 1 : vérifier que la distribution des données imputées est similaire à celle des données d'origine. 
 
 ```{r diagnostics1}
 
 densityplot(impregsto, main="Régression Stochastique", layout = c(2, 3))
 densityplot(impforest, main="Forêts aléatoires", layout = c(2, 3))
 densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
+densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble pas bien arriver à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, les trois méthodes semblent bien arriver à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vrai distribution.
+Pour la variable CRIM, aucune méthode ne semble parvenir à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, les trois méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
 
-Un deuxième diagnostic consiste en vérifier la convergence des 3 algorithmes. 
+## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
-```{r diagnostics2, warning=FALSE}
-plot(impregsto, main="Régression Stochastique", layout = c(2, 3))
-plot(impforest, main="Forêts aléatoires", layout = c(2, 3))
-plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
-```
+La verification de la convergence se fait à partir des graphiques de variations de la moyenne et de l'écart type, pour chaque  méthode, pour chaque itération et chaque donnée imputée.Pour que la convergence soit vérifiée, il faut que les différentes courbes se mélangent librement, sans une tendance particulière. C'est bien le cas pour nos graphiques; donc, nous n'avons pas de problème de convergence. (**cf.annexe 4.1**)
 
-Voici les graphiques des variations de la moyenne et l'écart type, avec les trois méthodes, pour chaque itération et chaque donnée imputée. Pour la convergence, les différentes lignes doivent se mélanger librement sans une tendance définitive. C'est bien le cas pour nos graphiques, donc, nous n'avons pas des problèmes de convergence. 
+## Diagnostic 3 : vérifier l'ajustement du modèle d'imputation
+Pour cela, nous traçons le graphe d'overimputation. Dans ce cas, chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs. 
 
-Les trois méthodes semblent bien converger sans montrer aucune tendance.
+Sur ces graphiques, la 1ere bissectrice  (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction des données manquantes (entre 0 - 20% pour notre cas)
 
-En dernier, nous allons vérifier l'ajustement du modèle d'imputation, en utilisant le graph d'overimputation. Dans ce cas, chaque donnée observée et supprimée et pour chaque, 100 valeurs sont predits (en utilisant la même méthode d'imputation choisie) et la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs. 
+**Ajustement de la regression stochastique :**
 
-Sur ces graphiques, la ligne y=x apparaît pour indiquer où les imputations devraient être si elles étaient parfaites, ainsi que les points et les intervalles de confiance pour chaque valeur. On espère que 90% des intervalles doivent passer par cette ligne y=x. La couleur des intervalles represente la fraction des données manquantes (entre 0 - 20% pour notre cas)
-
-Voici le graphique pour la regression stochastique :
-
-```{r diagnostics3a, warning=FALSE}
-
+```{r diagnostics3a}
 res.over1<-overimpute(impregsto,nnodes=7,plotvars = c(1,2,3,4,7,13),plotinds=sample(x = seq(nrow(dHB)),size = 100))
 
 ```
 
-Le graphique pour les forêts aléatoires
+**Ajustement des forêts aléatoires :**
 
-```{r diagnostics3b, warning=FALSE}
-
+```{r diagnostics3b}
 res.over2<-overimpute(impforest,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 
 ```
 
-Le dernier pour la predictive mean matching
+**Ajustement de la predictive mean matching :**
 
-```{r diagnostics3c, warning=FALSE}
+```{r diagnostics3c}
 
 res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-Comme CHAS n'est pas une variable continue, elle prends uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques. 
+**Ajustement de l'ACP :**
 
-On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour les trois méthodes. Cependant ce n'est pas les cas pour les variables CRIM et ZN
+```{r diagnostics3d}
 
-**Conclusion**
-
-Les résultats des trois modes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajustée.Cependant la méthode des forêts aléatoires semble mieux respecter la distribution des variables. 
-
-Nous allons maintenant faire de l'imputation multiple pour pouvoir comparer les résultats. 
-
-## Imputation multiple
-
-L'imputation multiple consiste en trois phases :
-
-1 - Imputation des données manquantes m fois
-2 - Analyse de m datasets imputés
-3 - Mise en commun des paramètres à travers m analyses
-
-
-## Imputation par ACP
-
-Nous alloms gerer les données manquants en utilisant la ACP (Analyse des composants principales), en generant plusieurs tableaux completés.
-
-D'abord nous allons chercher le nombre des dimensions
-```{r dim_pca}
-nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
-plot(names(nb.kfold$criterion),nb.kfold$criterion,type="b")
+res.over3<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-Selon le graphique, le nombre de dimensions sera 3
 
-```{r pca}
-res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=TRUE,method.mi = "Bayes")
-res.overmipca = Overimpute(res.bayesMIPCA)
+Comme CHAS n'est pas une variable continue, elle prend uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques. 
 
-```
+On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour chacune des méthodes. Cependant, ce n'est pas le cas pour les variables CRIM et ZN.
 
-Selon les graphiques les intervalles touchent tous la ligne diagonal, sauf pour les plus grands valeurs de CRIM. Il semblerait que cette méthode est plus appropié pour faire de l'imputation sur notre dataset. 
+## Conclusion
+(à faire)
+Les résultats de ces méthodes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajusté. Cependant la méthode des forêts aléatoires semble mieux respecter la distribution des variables.   
 
-```{r pca2}
 
-plot(res.bayesMIPCA, choice = "var")
 
-```
-
-Ce graphique represente la projection des individus pour chaque dataset imputé, avec l'algorithme iterative de l'ACP. Nous voyons qu'il y a très peu d'incertitude sur les variables (les nuages des points sont très rapprochés)
-
-**Regression linéaire**
-
-```{r lm_pca}
-imppca <- prelim(res.mi = res.bayesMIPCA, X = dHB)
-fit <- with(data=imppca,exp = lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
-
-res.pool<-pool(fit)
-summary(res.pool)
-
-```
-
-Les valeurs des estimateurs sont très proches aux ceux trouvés par l'imputation simple, mais les imputations respectent mieux la distribution avec cette méthode. 
-
-# Conclusion
-
+**_________________________________________________________________________________**    
 
 # Annexes  
 
 ### Annexe 1.1 : graphiques exploratoires du jeu de données
-Les representations graphiques présentent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
-
+Les répresentations graphiques donnent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
 
 ```{r angraDM}
 
@@ -574,20 +506,73 @@ reg1=lm(MEDV~.,data=dHB)
 summary(reg1)
 
 ```
-### Annexe 1.4 : regression linéaire MEDV sur variables choisies par stepwise
 
+### Annexe 1.4 : regression linéaire MEDV sur variables choisies par stepwise
 ```{r stepwise}
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
 
 ```
-### Annexe 2.1 : lien entre les données manquantes et observées
 
-```{r DMflux}
-fluxdBH=round(as.matrix(flux(dHB)[,2:3]),2)
-#kable((fluxdBH),format="markdown",digits=3)
-kable(ifelse(((fluxdBH)<1 & (fluxdBH)>0),  cell_spec(fluxdBH, "html", color = "red", bold = T), cell_spec(fluxdBH, "html", color = "black", bold = T)), format="markdown")
+### Annexe 3.1 : traitement des DM par suppression
+```{r modimpreg}
+mu = colMeans(dHB, na.rm = TRUE)
+cv = cov(dHB, use = "pairwise")
+
+impreg= lavaan("MEDV~1 + CRIM + ZN+INDUS+CHAS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT
+              MEDV ~~ MEDV",
+             sample.mean = mu, sample.cov = cv,
+             sample.nobs = sum(complete.cases(dHB)))
+summary(impreg)
 ```
 
-test
+### Annexe 3.2 : Imputation - méthodologie
+L'imputation correspond à l'action de convertir un échantillon incomplet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
+
+Les 7 étapes de l'imputation:
+
+**Etape 1** - Décider si supposition de MAR est plausible.  
+(vu en partie 2)
+
+**Etape 2** - Identifier la forme du modèle d'imputation.  
+Le choix sera orienté par l’échelle de la variable à imputer, et intègre de préférence la connaissance de la relation entre les variables. L'algorithm MICE a besoin d'avoir une méthode univariée d'imputation pour chaque variable incomplète. 
+
+**Etape 3** - Sélectionner le groupe de variables à inclure comme predicteurs dans le modèle d'imputation (fonction **mice**) 
+
+```{r pred_matrix}
+imp = mice(dHB, print = FALSE)
+kable((imp$predictorMatrix),format="markdown")
+
+```
+
+Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres variables (indicateur = 1); idem pour ZN, INDUS, CHAS, AGE et LSTAT. Nous allons utiliser toutes les variables comme predicteurs. Cela est possible car le dataset est encore de taille raisonnable, (difficile sur les grands datasets , à cause de la multicolinearité ou de la capacité des machines) 
+
+**Etape 4** - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
+Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
+
+**Etape 5** - Définir l'ordre d'imputation des variables (influe sur la convergence de l'algorithme). Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. L'ordre est à changer si nous avons des soucis de convergence des algorithmes. 
+
+**Etape 6** - Définir les imputations de départ et le nombre d'itérations 
+
+**Etape 7** - Imputer et ajuster le modèle
+la taille de m, le nombre d'ensembles de données imputées. L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
+
+### Annexe 3.3 : Imputation par régression stochastique
+```{r modimpregstoed}
+summary(dHBcompl.regsto)
+regregsto=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
+summary(regregsto)
+```
+
+## Annexe 4.1 Diagnostic 2 : convergence des algorithmes. 
+
+```{r diagnostics2}
+plot(impregsto, main="Régression Stochastique", layout = c(2, 3))
+plot(impforest, main="Forêts aléatoires", layout = c(2, 3))
+plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
+#plot(imppca, main="ACP", layout = c(2, 3))
+```
+
+
+
