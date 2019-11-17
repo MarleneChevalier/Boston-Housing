@@ -302,25 +302,23 @@ La description de la nouvelle structure des données se trouve sur l'annexe 3.4 
 Les données manquantes sont imputées en utilisant la ACP (Analyse des composants principales). Il s'agit :  
 
    - d'estimer le nombre de dimensions utilisées dans la formule de reconstruction avec la fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
-  
-```{r dim_pca}
+
+```{r dim_pca1, include=FALSE}
 nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
+```
+  
+```{r dim_pca2}
 plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",type="b")
 ```
 Selon le graphique, le nombre de dimensions sera 3.
 
    - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé  
   fonction **MIPCA (avec method.mi = "Bayes")**  
-  
-   - visualiser les ensembles de données imputées avec la fonction plot.MIPCA  
-  
+ 
 ```{r pca}
-res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=TRUE,method.mi = "Bayes")
-res.overmipca = Overimpute(res.bayesMIPCA)
-#plot.MIPCA(res.bayesMIPCA) 
+res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
 
 ```
-Selon les graphiques les intervalles touchent tous la ligne diagonale, sauf pour les plus grandes valeurs de CRIM. Il semblerait que cette méthode soit plus appropiée pour faire de l'imputation sur notre dataset. 
 
 **Regression linéaire sur le jeu de données complété par MIPCA**
 
@@ -332,7 +330,9 @@ summary(res.pool)
 
 ```
 
-Les valeurs des estimateurs sont très proches aux celles trouvées par l'imputation simple, mais les imputations multiples respectent mieux la distribution avec cette méthode. 
+Les valeurs des estimateurs sont très proches aux celles trouvées par les autres méthodes d'imputation multiple. 
+
+Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec des datasets complets. Ces régressions ont des résultats très proches en termes de R2 ajustée, des estimateurs et des résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
 # 4. Diagnostics et conclusion
 
@@ -346,7 +346,7 @@ densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble parvenir à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, les trois méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
+Pour la variable CRIM, aucune méthode ne semble parvenir à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, tous les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
@@ -359,28 +359,28 @@ Sur ces graphiques, la 1ere bissectrice  (y=x) représente l'imputation parfaite
 
 **Ajustement de la regression stochastique :**
 
-```{r diagnostics3a}
+```{r diagnostics3a,warning=FALSE}
 res.over1<-overimpute(impregsto,nnodes=7,plotvars = c(1,2,3,4,7,13),plotinds=sample(x = seq(nrow(dHB)),size = 100))
 
 ```
 
 **Ajustement des forêts aléatoires :**
 
-```{r diagnostics3b}
+```{r diagnostics3b,warning=FALSE}
 res.over2<-overimpute(impforest,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 
 ```
 
 **Ajustement de la predictive mean matching :**
 
-```{r diagnostics3c}
+```{r diagnostics3c,warning=FALSE}
 
 res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
 **Ajustement de l'ACP :**
 
-```{r diagnostics3d}
+```{r diagnostics3d, warning=FALSE}
 
 res.over3<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
@@ -390,11 +390,15 @@ Comme CHAS n'est pas une variable continue, elle prend uniquement les valeurs 0 
 
 On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour chacune des méthodes. Cependant, ce n'est pas le cas pour les variables CRIM et ZN.
 
-## Conclusion
-(à faire)
-Les résultats de ces méthodes d'imputation nous conduisent vers des modèles qui sont très similaires, avec les mêmes estimateurs, mêmes résidus et le même R2 ajusté. Cependant la méthode des forêts aléatoires semble mieux respecter la distribution des variables.   
+### Conclusions
 
+Après nos trois diagnostics il semblerait que nos modèles avec les differents méthodes:
 
+* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres
+* Nous n'avons pas des problèmes de convergence
+* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
+
+Comme le pourcentage des valeurs manquantes est bas
 
 **_________________________________________________________________________________**    
 
