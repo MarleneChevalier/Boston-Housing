@@ -245,56 +245,57 @@ Nous allons ici en tester plusieurs méthodes d'imputation multiple : l'imputati
 
 ### Imputation par régression stochastique
 
-Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides (décrites plus haut).  
-fonction **mice ( avec method = "norm.nob")**
+Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides d'imputation simple. Nous fixons m=6, en suivant les conseils de Stef Van Buuren dans son livre "flexible imputation data"
 
+Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "norm.nob")**
 
 ```{r modimpregsto}
 impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
             seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
-##summary(dHBcompl.regsto)
 regregsto=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
 summary(regregsto)
 ```
 
 Avec cette méthode, on observe un R2 ajusté de 0.736 pour la régression linéaire faite avec le dataset completé avec la régression stochastique. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
 
+La description de la nouvelle structure des données se trouve sur l'annexe 3.2
+
 ### Imputation par forêts aléatoires
 
 Avec cette méthode, pour les variables continues les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires.  
-fonction **mice ( avec method = "rf")**
+Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
 
 ```{r modimpforest, warning=FALSE}
 
 impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
-##summary(dHBcompl.rf)
 regrf=lm(MEDV~.-INDUS-AGE,data=dHBcompl.rf)
 summary(regrf)
 
 ```
 
-Avec cette méthode on observe un R2 ajusté de 0.73. Proche mais plus bas que le R2 ajuste de la regression faite avec les données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+Avec cette méthode on observe un R2 ajusté de 0.734 avec le dataset completé, presque le même obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
-
-
+La description de la nouvelle structure des données se trouve sur l'annexe 3.3
 
 ### Imputation par predictive mean matching
 
-La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un petit ensemble des "donneurs" à partir des cas complets, avec des valeurs prédits proches des valeurs prédits par les données manquantes. Un donneur est pris aléatoirement et la valeur observée remplace la donnée manquante.   
-fonction **mice ( avec method = "pmm")**
+La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un sous ensemble à partir des cas complets, avec des valeurs prédites proches des valeurs prédites par les données manquantes. Un élement du sous ensemble est pris aléatoirement et la valeur observée remplace la donnée manquante. 
+
+Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
 
 ```{r modpmm}
 imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
-summary(dHBcompl.pmm)
 regpmm=lm(MEDV~.-INDUS-AGE,data=dHBcompl.pmm)
 summary(regpmm)
 
 ```
 
 Pareil que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+
+La description de la nouvelle structure des données se trouve sur l'annexe 3.4 et on observe que les valeurs min, max et médianne sont presque idéntiques à ceux obtenus avec les forêts aléatoires.
 
 ## Imputation par ACP
 
@@ -546,11 +547,19 @@ Dans le cas de notre dataset, les variables avec des données manquantes ne sont
 **Etape 7** - Imputer et ajuster le modèle
 la taille de m, le nombre d'ensembles de données imputées. L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
 
-### Annexe 3.2 : Imputation par régression stochastique
-```{r modimpregstoed}
+### Annexe 3.2 : Structure des données imputées par régression stochastique
+```{r imputed1}
 summary(dHBcompl.regsto)
-regregsto=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
-summary(regregsto)
+```
+
+### Annexe 3.3 : Structure des données imputées par forêts aléatoires
+```{r imputed2}
+summary(dHBcompl.rf)
+```
+
+### Annexe 3.4 : Structure des données imputées par pmm
+```{r imputed3}
+summary(dHBcompl.pmm)
 ```
 
 ## Annexe 4.1 Diagnostic 2 : convergence des algorithmes. 
