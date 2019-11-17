@@ -1,9 +1,10 @@
 ---
-title: "Projet : Méthodes de traitement de données manquantes"
+title: 'Projet : Méthodes de traitement de données manquantes'
 author: "Olga Silva / Marlène Chevalier"
-date: "30/11/2019"  
+date: "30/11/2019"
 output:
   html_document: default
+  pdf_document: default
 ---
 
 <style type="text/css">
@@ -397,11 +398,22 @@ On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles
 
 Après nos trois diagnostics il semblerait que nos modèles avec les différentes méthodes:
 
+<<<<<<< HEAD
 * Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres.
 * Ne présentent pas de problèmes de convergence
 * Avec l'overimputation nous voyons que les variables CRIM et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
+=======
+* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres
+* Nous n'avons pas des problèmes de convergence
+* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible ce problème principalement pour les grands valeurs.
 
-Comme le pourcentage des valeurs manquantes est bas
+Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit. 
+
+Les résidus sont très proches pour tous les modèles (annexe 4.2), donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
+
+Par contre, nous ne pouvons pas ignorer que le modèle est mal ajustée. Une correction peut-être envisagée sur l'annexe 1.5
+>>>>>>> 8a0a944bc744397f7e847bbc91d02b5c6273c517
+
 
 
 
@@ -521,9 +533,15 @@ summary(reg1)
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
-
 ```
 
+### Annexe 1.5 : regression linéaire multiple avec ordre 2
+```{r multiple_regression}
+dHB2 <-na.omit(dHB)
+model2 <- lm(formula = MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2), data = dHB2)
+
+plot(model2, 1)
+```
 
 ### Annexe 3.1 : Imputation - méthodologie
 L'imputation correspond à l'action de convertir un échantillon incomplet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
@@ -571,6 +589,7 @@ summary(dHBcompl.rf)
 summary(dHBcompl.pmm)
 ```
 
+
 ## Annexe 4.1 Diagnostic 2 : convergence des algorithmes. 
 
 ```{r diagnostics2}
@@ -581,4 +600,12 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 ```
 
 
+## Annexe 4.2 Comparaison des residuals 
 
+```{r residualspmm}
+par(mfrow = c(2, 2))
+plot(model, 1, main="original")
+plot(regrf,1,main="Forêts aléatoires")
+plot(regregsto,1,"Régression stochastique")
+plot(regpmm, 1, main ="pmm")
+```
