@@ -401,8 +401,9 @@ Après nos trois diagnostics il semblerait que nos modèles avec les differents 
 
 Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit. 
 
-L'imputation toute seule ne règle par le problème non plus que notre modèle est mal ajustée. il faut corriger avec un mod
+Les résidus sont très proches pour tous les modèles (annexe 4.2), donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
 
+Par contre, nous ne pouvons pas ignorer que le modèle est mal ajustée. Une correction peut-être envisagée sur l'annexe 1.5
 
 
 **_________________________________________________________________________________**    
@@ -591,7 +592,9 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 ## Annexe 4.2 Comparaison des residuals 
 
 ```{r residualspmm}
-par(mfrow = c(1, 2))
-plot(model, 1)
-plot(regpmm, 1)
+par(mfrow = c(2, 2))
+plot(model, 1, main="original")
+plot(regrf,1,main="Forêts aléatoires")
+plot(regregsto,1,"Régression stochastique")
+plot(regpmm, 1, main ="pmm")
 ```
