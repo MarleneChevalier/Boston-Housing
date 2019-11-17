@@ -1,9 +1,10 @@
 ---
-title: "Projet : Méthodes de traitement de données manquantes"
+title: 'Projet : Méthodes de traitement de données manquantes'
 author: "Olga Silva / Marlène Chevalier"
-date: "30/11/2019"  
+date: "30/11/2019"
 output:
   html_document: default
+  pdf_document: default
 ---
 
 <style type="text/css">
@@ -396,9 +397,13 @@ Après nos trois diagnostics il semblerait que nos modèles avec les differents 
 
 * Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres
 * Nous n'avons pas des problèmes de convergence
-* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
+* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible ce problème principalement pour les grands valeurs.
 
-Comme le pourcentage des valeurs manquantes est bas
+Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit. 
+
+L'imputation toute seule ne règle par le problème non plus que notre modèle est mal ajustée. il faut s'orienter
+
+
 
 **_________________________________________________________________________________**    
 
@@ -516,9 +521,16 @@ summary(reg1)
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
-
+plot(model, 1)
 ```
 
+### Annexe 1.5 : regression linéaire multiple avec ordre 2
+```{r multiple_regression}
+dHB2 <-na.omit(dHB)
+model2 <- lm(formula = MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2), data = dHB2)
+
+plot(model2, 1)
+```
 
 ### Annexe 3.1 : Imputation - méthodologie
 L'imputation correspond à l'action de convertir un échantillon incomplet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
