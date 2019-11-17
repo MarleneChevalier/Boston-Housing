@@ -241,14 +241,14 @@ Tous les méthodes d'imputation multiple suivent les mêmes trois étapes :
 **Etape 2** : Analyse de m datasets imputés  
 **Etape 3** : Mise en commun des paramètres à travers m analyses  
 
-Plus de détail sur la méthodologie se trouve sur l'annexe 3.1 
+Plus de détail sur la méthodologie se trouve sur l'**annexe 3.1** 
 
 Nous allons ici en tester plusieurs méthodes d'imputation multiple : l'imputation par regression stochastique, les forêts aléatoires, predictive mean matching et ACP. Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdentes. 
 
 
 ### Imputation par régression stochastique
 
-Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides d'imputation simple. Nous fixons m=6, en suivant les conseils de Stef Van Buuren dans son livre "flexible imputation data"
+Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides d'imputation simple. Nous fixons m=6, en suivant les conseils de Stef Van Buuren dans son livre "flexible imputation data".
 
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "norm.nob")**
 
@@ -262,11 +262,11 @@ summary(regregsto)
 
 Avec cette méthode, on observe un R2 ajusté de 0.736 pour la régression linéaire faite avec le dataset completé avec la régression stochastique. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
 
-La description de la nouvelle structure des données se trouve sur l'annexe 3.2
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**.
 
 ### Imputation par forêts aléatoires
 
-Avec cette méthode, pour les variables continues les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires.  
+Avec cette méthode, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires.  
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
 
 ```{r modimpforest, warning=FALSE}
@@ -280,11 +280,11 @@ summary(regrf)
 
 Avec cette méthode on observe un R2 ajusté de 0.734 avec le dataset completé, presque le même obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
-La description de la nouvelle structure des données se trouve sur l'annexe 3.3
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**
 
 ### Imputation par predictive mean matching
 
-La méthode pmm est très répandue car elle est facile à utiliser, elle sélectionne un sous ensemble à partir des cas complets, avec des valeurs prédites proches des valeurs prédites par les données manquantes. Un élement du sous ensemble est pris aléatoirement et la valeur observée remplace la donnée manquante. 
+La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante.Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue la valeur observée pour remplacer la valeur manquante. 
 
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
 
@@ -296,9 +296,9 @@ summary(regpmm)
 
 ```
 
-Pareil que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+De même que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
 
-La description de la nouvelle structure des données se trouve sur l'annexe 3.4 et on observe que les valeurs min, max et médianne sont presque idéntiques à ceux obtenus avec les forêts aléatoires.
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.4** et on observe que les valeurs mininimum, maximum et médianne sont presque idéntiques à celles obtenues avec les forêts aléatoires.
 
 ## Imputation par ACP
 
@@ -313,9 +313,9 @@ nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
 ```{r dim_pca2}
 plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",type="b")
 ```
-Selon le graphique, le nombre de dimensions sera 3.
+Selon le graphique, le nombre de dimensions sera de 3.
 
-   - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé  
+   - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé.    
   fonction **MIPCA (avec method.mi = "Bayes")**  
  
 ```{r pca}
@@ -323,7 +323,7 @@ res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
 
 ```
 
-**Regression linéaire sur le jeu de données complété par MIPCA**
+**Régression linéaire sur le jeu de données complété par MIPCA**
 
 ```{r lm_pca}
 imppca= prelim(res.mi = res.bayesMIPCA, X = dHB)
@@ -333,9 +333,9 @@ summary(res.pool)
 
 ```
 
-Les valeurs des estimateurs sont très proches aux celles trouvées par les autres méthodes d'imputation multiple. 
+Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
 
-Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec des datasets complets. Ces régressions ont des résultats très proches en termes de R2 ajustée, des estimateurs et des résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
+Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R2 ajusté, des estimateurs et des résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
 # 4. Diagnostics et conclusion
 
@@ -349,16 +349,16 @@ densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble parvenir à réproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, tous les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
+Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
-La verification de la convergence se fait à partir des graphiques de variations de la moyenne et de l'écart type, pour chaque  méthode, pour chaque itération et chaque donnée imputée.Pour que la convergence soit vérifiée, il faut que les différentes courbes se mélangent librement, sans une tendance particulière. C'est bien le cas pour nos graphiques; donc, nous n'avons pas de problème de convergence. (**cf.annexe 4.1**)
+La vérification de la convergence se fait à partir des graphiques de variation de la moyenne et de l'écart type, pour chaque  méthode, pour chaque itération et chaque donnée imputée.Pour que la convergence soit vérifiée, il faut que les différentes courbes se mélangent, sans une tendance particulière. C'est bien le cas pour nos graphiques; donc, nous n'avons pas de problème de convergence. (**cf.annexe 4.1**)
 
 ## Diagnostic 3 : vérifier l'ajustement du modèle d'imputation
-Pour cela, nous traçons le graphe d'overimputation. Dans ce cas, chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs. 
+Pour cela, nous traçons le graphe d'overimputation.Chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs prédites. 
 
-Sur ces graphiques, la 1ere bissectrice  (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction des données manquantes (entre 0 - 20% pour notre cas)
+Sur ces graphiques, la 1ère bissectrice (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction de données manquantes (entre 0 - 20% pour notre cas).
 
 **Ajustement de la regression stochastique :**
 
@@ -395,13 +395,15 @@ On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles
 
 ### Conclusions
 
-Après nos trois diagnostics il semblerait que nos modèles avec les differents méthodes:
+Après nos trois diagnostics il semblerait que nos modèles avec les différentes méthodes:
 
-* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres
-* Nous n'avons pas des problèmes de convergence
-* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
+* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres.
+* Ne présentent pas de problèmes de convergence
+* Avec l'overimputation nous voyons que les variables CRIM et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
 
 Comme le pourcentage des valeurs manquantes est bas
+
+
 
 **_________________________________________________________________________________**    
 
@@ -412,78 +414,78 @@ Les répresentations graphiques donnent, pour chaque variable explicative, la di
 
 ```{r angraDM}
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(CRIM,main=NULL,xlab="taux de criminalité",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(CRIM,main=NULL,xlab="taux de criminalité",ylab="fréquence", col="blue")
 plot(CRIM,MEDV,xlab="taux de criminalité",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et taux de criminalité")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(ZN,main=NULL,xlab="prop.terrains résidentiels",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(ZN,main=NULL,xlab="prop.terrains résidentiels",ylab="fréquence", col="blue")
 plot(ZN,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title(main="Valeur médiane du logement et proportion de terrains résidentiels")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(INDUS,main=NULL,xlab="prop.surface activité industrielle",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(INDUS,main=NULL,xlab="prop.surface activité industrielle",ylab="fréquence", col="blue")
 plot(INDUS,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title(main="Valeur médiane du logement et proportion de surface d'activité industrielle")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(NOX,main=NULL,xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(NOX,main=NULL,xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="blue")
 plot(NOX,MEDV,xlab="concentration oxyde d'azote (1/10M)",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et concentration en oxyde d'azote")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(RM,main=NULL,xlab="nombre de chambre",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(RM,main=NULL,xlab="nombre de chambre",ylab="fréquence", col="blue")
 plot(RM,MEDV,xlab="nombre de chambre",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et nombre moyen de chambre")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(AGE,main=NULL,xlab="prop. construites avant 1940",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(AGE,main=NULL,xlab="prop. construites avant 1940",ylab="fréquence", col="blue")
 plot(AGE,MEDV,xlab="prop. construites avant 1940",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur du logement et proportion de propriétes construites avant 1940")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(DIS,main=NULL,xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(DIS,main=NULL,xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="blue")
 plot(DIS,MEDV,xlab="distance moyenne aux centres d'emplois",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur du logement et distance moyenne aux 5 centres d'emplois")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(TAX,main=NULL,xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(TAX,main=NULL,xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="blue")
 plot(TAX,MEDV,xlab="taux d'imposition foncier (1/10K$",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et taux d'imposition foncier")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(PTRATIO,main=NULL,xlab="ratio élèves-enseignants",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(PTRATIO,main=NULL,xlab="ratio élèves-enseignants",ylab="fréquence", col="blue")
 plot(PTRATIO,MEDV,xlab="ratio élèves-enseignants",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur médiane du logement et ratio élèves-enseignants")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(B,main=NULL,xlab="proportion de population afro-américaine",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(B,main=NULL,xlab="proportion de population afro-américaine",ylab="fréquence", col="blue")
 plot(B,MEDV,xlab="proportion de population afro-américaine",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
 title("Valeur du logement et proportion de population afro-américaine")
 
-par(mfrow = c(1, 2), pch = 16, col="green")
-hist(LSTAT,main=NULL,xlab="proportion de population précaire",ylab="fréquence", col="green")
+par(mfrow = c(1, 2), pch = 16, col="blue")
+hist(LSTAT,main=NULL,xlab="proportion de population précaire",ylab="fréquence", col="blue")
 plot(LSTAT,MEDV,xlab="proportion de population précaire",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
@@ -491,10 +493,10 @@ title("Valeur médiane du logement et proportion de population précaire")
 
 par(mfrow = c(1, 2))
 RADf=factor(RAD)
-boxplot(MEDV~RADf,xlab="indice d'accessibilité aux autoroutes",ylab="valeur médiane du logement (K$)", col="green")
+boxplot(MEDV~RADf,xlab="indice d'accessibilité aux autoroutes",ylab="valeur médiane du logement (K$)", col="blue")
 abline(h=mean(MEDV), col="red")
 CHASf=factor(CHAS)
-boxplot(MEDV~CHASf,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="green")
+boxplot(MEDV~CHASf,xlab="proximité avec la rivière Charles",ylab="valeur médiane du logement (K$)", col="blue")
 abline(h=mean(MEDV), col="red")
 ```
 
