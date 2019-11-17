@@ -401,7 +401,7 @@ Après nos trois diagnostics il semblerait que nos modèles avec les differents 
 
 Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit. 
 
-L'imputation toute seule ne règle par le problème non plus que notre modèle est mal ajustée. il faut s'orienter
+L'imputation toute seule ne règle par le problème non plus que notre modèle est mal ajustée. il faut corriger avec un mod
 
 
 
@@ -521,7 +521,6 @@ summary(reg1)
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
-plot(model, 1)
 ```
 
 ### Annexe 1.5 : regression linéaire multiple avec ordre 2
@@ -578,6 +577,7 @@ summary(dHBcompl.rf)
 summary(dHBcompl.pmm)
 ```
 
+
 ## Annexe 4.1 Diagnostic 2 : convergence des algorithmes. 
 
 ```{r diagnostics2}
@@ -588,4 +588,10 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 ```
 
 
+## Annexe 4.2 Comparaison des residuals 
 
+```{r residualspmm}
+par(mfrow = c(1, 2))
+plot(model, 1)
+plot(regpmm, 1)
+```
