@@ -136,6 +136,10 @@ Nous commençons par examiner les résultats d'une regression linéaire de MEDV 
 Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset.   
 Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
 
+Cependant, en regardant le graphique des résidus (*cf. annexe 1.5*) nous observons que le modèle n'est pas optimal, il semblerait qu'il y a une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (*cf. annexe 1.6*)  et observons que la variable LSTAT n'a pas une relation polynomiale d'ordre 2. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, les résidus s'améliorent nettement. (*cf. annexe 1.7*)
+
+
+
 ## En conclusion sur l'exploration de données
 <<<<<<< HEAD
 La valeur médiane du logement à Boston et ses environs est comprise entre 5 et 50 Kdollars. Sa distribution est croissante jusqu'a sa valeur moyenne (22.5Kdollars) puis décroit fortement à partir de 25 K$.  
@@ -145,13 +149,13 @@ La valeur médiane du logement à Boston et ses environs est comprise entre 5K$ 
 >>>>>>> aa8d8bda1d759717e2e1a0aa221fdb3858912456
 **La valeur du logement est influencée ** (p_value <5%): 
 
-  **- positivement** principalement (coefficient estimé = 4.2) **par le nombre de chambres** et plus faiblement (coefficients estimés de 0.28 et 0.05) **par l'accessibilité aux autoroutes et la proportion de terrain résidentiel**   
+  **- positivement** principalement (coefficient estimé = 3.58) **par le nombre de chambres** et plus faiblement (coefficients estimés de 0.25 et 0.03) **par l'accessibilité aux autoroutes et la proportion de terrain résidentiel**   
   
-  **- négativement** principalement (coefficient estimé = -18.5) **par la concentration en oxyde d'azote** et plus faiblement (coefficients estimés entre de -1.42 et -0.01) **par la distance aux centres d'emplois, le ratio élèves-enseignants, la proportion de population précaire et le taux foncier**   
-Le R² du modèle de regression sur jeu de données incomplet est de **0.76 (R² de référence)**.    
-(**cf. annexe 1.4** : résultat de la regression linéaire après selection de variable)
+  **- négativement** principalement (coefficient estimé = -14.71) **par la concentration en oxyde d'azote** et plus faiblement (coefficients estimés entre de -1.34, -0.76, -1.45, -0.01) **par la distance aux centres d'emplois, le ratio élèves-enseignants, la proportion de population précaire et le taux foncier**   
+Le R² ajusté du modèle de regression sur jeu de données incomplet est de **0.7965 (R² de référence)**.    
+(**cf. annexe 1.7** : résultat de la regression linéaire après selection de variable)
 
-Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**).
+Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**), et LSTAT a une relation quadratique avec MEDV.
 
 Nous allons comparer maintenant ce modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
 
@@ -179,13 +183,7 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
-Voici une deuxième representation des données manquantes obtenue avec **matrixplot**. Elle permet d'identifier des dépendences des valeurs extrêmes et des données manquantes. Les données observées sont en gris et les manquantes en rouge. 
-
-```{r inventDM3}
-matrixplot(dHB,sortby="MEDV")
-```
-
-Nous pouvons observer que les valeurs manquantes se répartissent bien dans l'ensemble du jeu de données.
+Une deuxième representation des données manquantes obtenue avec **matrixplot** peut être observé en **annexe 2.1**. Elle permet d'identifier des dépendences des valeurs extrêmes et des données manquantes. Les données observées sont en gris et les manquantes en rouge. Nous pouvons observer que les valeurs manquantes se répartissent bien dans l'ensemble du jeu de données.
  
 ## Proportion de données manquantes
 
@@ -257,13 +255,13 @@ Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "
 impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
             seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
-regregsto=lm(MEDV~.-INDUS-AGE,data=dHBcompl.regsto)
+regregsto=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.regsto)
 summary(regregsto)
 ```
 
-Avec cette méthode, on observe un R2 ajusté de 0.736 pour la régression linéaire faite avec le dataset completé avec la régression stochastique. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
+Avec cette méthode, on observe un R2 ajusté de **0.7806** pour la régression linéaire faite avec le dataset completé avec la régression stochastique. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
 
-La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**.
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatifs en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
 
 ### Imputation par forêts aléatoires
 
@@ -274,14 +272,14 @@ Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "
 
 impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
-regrf=lm(MEDV~.-INDUS-AGE,data=dHBcompl.rf)
+regrf=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.rf)
 summary(regrf)
 
 ```
 
-Avec cette méthode on observe un R2 ajusté de 0.734 avec le dataset completé, presque le même obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
+Avec cette méthode on observe un R2 ajusté de **0.783** avec le dataset completé, presque le même obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
-La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**. Ici le nouveau dataset completé est cohérent avec celui d'origine.
 
 ### Imputation par predictive mean matching
 
@@ -292,12 +290,12 @@ Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "
 ```{r modpmm}
 imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
-regpmm=lm(MEDV~.-INDUS-AGE,data=dHBcompl.pmm)
+regpmm=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.pmm)
 summary(regpmm)
 
 ```
 
-De même que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+De même que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes (**0.7808**). Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.4** et on observe que les valeurs mininimum, maximum et médianne sont presque idéntiques à celles obtenues avec les forêts aléatoires.
 
@@ -328,7 +326,7 @@ res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
 
 ```{r lm_pca}
 imppca= prelim(res.mi = res.bayesMIPCA, X = dHB)
-fit= with(data=imppca,exp = lm(MEDV~CRIM+ZN+CHAS+NOX+RM+DIS+RAD+TAX+PTRATIO+B+LSTAT))
+fit= with(data=imppca,exp = lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2)))
 res.pool=pool(fit)
 summary(res.pool)
 
@@ -350,7 +348,15 @@ densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
+Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. 
+
+Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
+
+Les méthodes de régression stochastique et ACP imputent des valeurs plus bas que les observées pour les variables CRIM, ZN et AGE. Cela fait qu'ils existent des valeurs minimums beaucoup plus petits que ceux de la distribution original. Par contre, les méthodes pmm et forêts aléatoires, respectent mieux la distribution des variables.
+
+Pour la variable CRIM, les valeurs observées plus grandes se trouvent uniquement sur l'imputation par forêts aléatoires. 
+
+Pour la variable AGE, la régression stochastique et ACP imputent des valeurs plus grands que ceux observées, proches de 200 pour les imputés quand la valeur maximale des observées est autour de 100.
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
@@ -398,21 +404,15 @@ On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles
 
 Après nos trois diagnostics il semblerait que nos modèles avec les différentes méthodes:
 
-<<<<<<< HEAD
-* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres.
+* Respectent bien la distribution des variables, même si la régression stochastique et l'ACP ne le font pas si bien que les autres.
 * Ne présentent pas de problèmes de convergence
 * Avec l'overimputation nous voyons que les variables CRIM et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
-=======
-* Respectent bien la distribution des variables, même si la régression stochastique ne le fait pas si bien que les autres
-* Nous n'avons pas des problèmes de convergence
-* Avec l'overimputation nous voyons que les variables CRIm et ZN ne sont pas toujours bien representées. En CRIM c'est visible ce problème principalement pour les grands valeurs.
 
-Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit. 
+Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit.
 
 Les résidus sont très proches pour tous les modèles (annexe 4.2), donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
 
-Par contre, nous ne pouvons pas ignorer que le modèle est mal ajustée. Une correction peut-être envisagée sur l'annexe 1.5
->>>>>>> 8a0a944bc744397f7e847bbc91d02b5c6273c517
+
 
 
 
@@ -535,13 +535,32 @@ model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
 ```
 
-### Annexe 1.5 : regression linéaire multiple avec ordre 2
+### Annexe 1.5 : Graphique des résidus du modèle
+```{r res}
+plot(model, 1)
+```
+
+### Annexe 1.6 : pairs plot
+```{r pairs}
+pairs(~ CRIM + ZN + CHAS + NOX + RM + DIS + MEDV, data = dHB)
+pairs(~ RAD + TAX + PTRATIO + B + LSTAT + MEDV, data = dHB)
+```
+
+### Annexe 1.7 : regression linéaire multiple avec ordre 2
 ```{r multiple_regression}
 dHB2 <-na.omit(dHB)
 model2 <- lm(formula = MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2), data = dHB2)
+summary(model2)
+plot(model2,1)
 
-plot(model2, 1)
 ```
+
+### Annexe 2.1 : Matrixplot données manquantes
+
+```{r inventDM3}
+matrixplot(dHB,sortby="MEDV")
+```
+
 
 ### Annexe 3.1 : Imputation - méthodologie
 L'imputation correspond à l'action de convertir un échantillon incomplet en un échantillon complet. Le but de l'imputation multiple est d'affecter plusieurs fois des données manquantes, d'analyser les données complétées et ensuite d'intégrer les résultats des analyses.
@@ -577,6 +596,7 @@ la taille de m, le nombre d'ensembles de données imputées. L'imputation du dat
 ### Annexe 3.2 : Structure des données imputées par régression stochastique
 ```{r imputed1}
 summary(dHBcompl.regsto)
+summary(dHB)
 ```
 
 ### Annexe 3.3 : Structure des données imputées par forêts aléatoires
