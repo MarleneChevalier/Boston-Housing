@@ -141,12 +141,9 @@ Cependant, en regardant le graphique des résidus (*cf. annexe 1.5*) nous observ
 
 
 ## En conclusion sur l'exploration de données
-<<<<<<< HEAD
-La valeur médiane du logement à Boston et ses environs est comprise entre 5 et 50 Kdollars. Sa distribution est croissante jusqu'a sa valeur moyenne (22.5Kdollars) puis décroit fortement à partir de 25 K$.  
-=======
+
 La valeur médiane du logement à Boston et ses environs est comprise entre 5K$ et 50K$. Sa distribution est croissante jusqu'a sa valeur moyenne (22.5K$) puis décroit fortement à partir de 25 K$.  
 
->>>>>>> aa8d8bda1d759717e2e1a0aa221fdb3858912456
 **La valeur du logement est influencée ** (p_value <5%): 
 
   **- positivement** principalement (coefficient estimé = 3.58) **par le nombre de chambres** et plus faiblement (coefficients estimés de 0.25 et 0.03) **par l'accessibilité aux autoroutes et la proportion de terrain résidentiel**   
@@ -198,7 +195,7 @@ En sortie, 2 graphiques :
   - Le graphique de gauche donne la proportion de données manquantes de chaque variable : ici on retrouve des proportions égales pour les variables CRIM, ZN, INDUS, CHAS, LSTAT (autour de 4%), les autres variables sont complètes.    
   - Le graphique de droite donne la proportion de chaque structure de données.   
 
-Ici 78% du jeux de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
+Ici 78% du jeu de données est complet pour toutes les variables, 3.8% des individus ont uniquement la variable CRIM qui n'est pas renseignée, ...
 
 ## Catégories de données manquantes
 
@@ -229,12 +226,10 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 ## Imputation multiple
 
-L'imputation multiple va créer m datasets complets, au lieu d'imputer une seule fois comme l'imputation simple. 
+Les méthodes d'imputation simple consistent à remplacer chaque valeur manquante par une valeur unique prédite ou simulée.  
+Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela peut dégrader l'information (corrélation entre les variables, modification de la distribution des variables, variables sous-estimées ...). Nous allons utiliser uniquement l'imputation multiple pour notre projet.  
 
-Les méthodes d'imputation simple consistent à remplacer chaque valeur maquante par une valeur unique prédite ou simulée. 
-Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela modifie la corrélation entre les variables, la distribution des variables, la variable peut-être sous-estimée, entre autres problèmes. Nous allons utiliser uniquement l'imputation multiple pour notre projet.
-  
-Tous les méthodes d'imputation multiple suivent les mêmes trois étapes :
+L'imputation multiple va créer m datasets complets, au lieu d'imputer une seule fois comme l'imputation simple. Les méthodes d'imputation multiple suivent trois grandes étapes :
 
 **Etape 1** : Imputation des données manquantes m fois  
 **Etape 2** : Analyse de m datasets imputés  
@@ -242,7 +237,7 @@ Tous les méthodes d'imputation multiple suivent les mêmes trois étapes :
 
 Plus de détail sur la méthodologie se trouve sur l'**annexe 3.1** 
 
-Nous allons ici en tester plusieurs méthodes d'imputation multiple : l'imputation par regression stochastique, les forêts aléatoires, predictive mean matching et ACP. Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdentes. 
+Nous allons ici tester plusieurs méthodes d'imputation multiple : l'imputation par regression stochastique, les forêts aléatoires, predictive mean matching et l'ACP. Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdentes. 
 
 
 ### Imputation par régression stochastique
@@ -259,14 +254,13 @@ regregsto=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B 
 summary(regregsto)
 ```
 
-Avec cette méthode, on observe un R2 ajusté de **0.7806** pour la régression linéaire faite avec le dataset completé avec la régression stochastique. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
+Avec cette méthode, on observe un R2 ajusté de **0.7806** après la régression linéaire faite avec le dataset completé. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatifs en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
 
 ### Imputation par forêts aléatoires
 
-Avec cette méthode, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires.  
-Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
+Dans l'imputation par forêts aléatoire, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
 
 ```{r modimpforest, warning=FALSE}
 
@@ -277,13 +271,13 @@ summary(regrf)
 
 ```
 
-Avec cette méthode on observe un R2 ajusté de **0.783** avec le dataset completé, presque le même obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
+Avec cette méthode on observe un R2 ajusté de **0.783** avec le dataset completé, proche de celui obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**. Ici le nouveau dataset completé est cohérent avec celui d'origine.
 
 ### Imputation par predictive mean matching
 
-La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante.Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue la valeur observée pour remplacer la valeur manquante. 
+La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante. Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue alors la valeur observée pour remplacer la valeur manquante. 
 
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
 
@@ -299,22 +293,18 @@ De même que pour les deux méthodes précédentes, le R2 ajusté est très proc
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.4** et on observe que les valeurs mininimum, maximum et médianne sont presque idéntiques à celles obtenues avec les forêts aléatoires.
 
-## Imputation par ACP
+## Imputation à l'aide d'un traitement bayésien de l'ACP
 
-Les données manquantes sont imputées en utilisant la ACP (Analyse des composants principales). Il s'agit :  
-
-   - d'estimer le nombre de dimensions utilisées dans la formule de reconstruction avec la fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
+Les données manquantes sont imputées en utilisant la ACP (Analyse des composantes principales).  
+Il s'agit d'abord d'estimer le nombre de composantes utilisés pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
 
 ```{r dim_pca1, include=FALSE}
 nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
 ```
-  
-```{r dim_pca2}
-plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",type="b")
-```
-Selon le graphique, le nombre de dimensions sera de 3.
 
-   - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé.    
+Selon le graphique (cf. **annexe 3.5**), le nombre de dimensions à retenir sera de 3.
+
+   - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé et la méthode bayésienne.  
   fonction **MIPCA (avec method.mi = "Bayes")**  
  
 ```{r pca}
@@ -326,7 +316,7 @@ res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
 
 ```{r lm_pca}
 imppca= prelim(res.mi = res.bayesMIPCA, X = dHB)
-fit= with(data=imppca,exp = lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2)))
+fit= with(data=imppca,exp = lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT))
 res.pool=pool(fit)
 summary(res.pool)
 
@@ -352,11 +342,11 @@ Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même
 
 Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
 
-Les méthodes de régression stochastique et ACP imputent des valeurs plus bas que les observées pour les variables CRIM, ZN et AGE. Cela fait qu'ils existent des valeurs minimums beaucoup plus petits que ceux de la distribution original. Par contre, les méthodes pmm et forêts aléatoires, respectent mieux la distribution des variables.
+Les méthodes de régression stochastique et d'ACP imputent des valeurs plus basses que celles observées dans la distribution originale des variables CRIM, ZN et AGE. Par contre, les imputations par les méthodes pmm et les forêts aléatoires respectent mieux la distribution originales des variables.
 
-Pour la variable CRIM, les valeurs observées plus grandes se trouvent uniquement sur l'imputation par forêts aléatoires. 
+Pour la variable CRIM, les valeurs observées plus grandes se trouvent uniquement sur l'imputation par forêt aléatoire. 
 
-Pour la variable AGE, la régression stochastique et ACP imputent des valeurs plus grands que ceux observées, proches de 200 pour les imputés quand la valeur maximale des observées est autour de 100.
+Pour la variable AGE, la régression stochastique et ACP imputent des valeurs plus grandes (proches de 200) que celles observées (autour de 100).
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
@@ -395,25 +385,23 @@ res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 
 res.over3<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-
 Comme CHAS n'est pas une variable continue, elle prend uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques. 
 
 On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour chacune des méthodes. Cependant, ce n'est pas le cas pour les variables CRIM et ZN.
 
-### Conclusions
+### Conclusion
 
-Après nos trois diagnostics il semblerait que nos modèles avec les différentes méthodes:
+D'après les trois diagnostics réalisés, les 4 méthodes d'imputation présentées:
 
 * Respectent bien la distribution des variables, même si la régression stochastique et l'ACP ne le font pas si bien que les autres.
-* Ne présentent pas de problèmes de convergence
-* Avec l'overimputation nous voyons que les variables CRIM et ZN ne sont pas toujours bien representées. En CRIM c'est visible principalement pour les grands valeurs.
+* Ne présentent pas de problème de convergence
+* Ne permettent pas de bien reconstruire les variables CRIM et ZN, qui ne sont pas toujours bien représentées (cf. overimputation).
 
-Si on compare par contre en termes de rapidité machine, la méthode APC c'est celle qui demande plus de temps, même en sachant que nous avons un dataset plutôt petit.
+Par contre, si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps, même sur un dataset plutôt petit.
 
-Les résidus sont très proches pour tous les modèles (annexe 4.2), donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
+Les résidus sont très proches quelques soient les modèles (cf.**annexe 4.2**). 
 
-
-
+Donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
 
 
 
@@ -586,12 +574,12 @@ Selon la matrice de résultat, CRIM sera prédit à partir de toutes les autres 
 **Etape 4** - Imputer ou non des variables qui sont des fonctions d'autres variables incomplètes.     
 Dans le cas de notre dataset, les variables avec des données manquantes ne sont pas des fonctions d'autres variables du dataset. Chacune répresente une thématique différente, utile pour l'estimation de la valeur de la maison.
 
-**Etape 5** - Définir l'ordre d'imputation des variables (influe sur la convergence de l'algorithme). Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. L'ordre est à changer si nous avons des soucis de convergence des algorithmes. 
+**Etape 5** - Définir l'ordre d'imputation des variables (influe sur la convergence de l'algorithme). Par défaut, algorithme MICE impute les données incomplètes du dataset de gauche à droite. L'ordre est à changer si on a des soucis de convergence des algorithmes. 
 
 **Etape 6** - Définir les imputations de départ et le nombre d'itérations 
 
 **Etape 7** - Imputer et ajuster le modèle
-la taille de m, le nombre d'ensembles de données imputées. L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
+L'imputation du dataset demande de faire des "essais-erreur", pour adapter et améliorer le modèle. Pour démarrer, il est conseillé de mettre m = 5 et l'augmenter lors de la dernière étape si on est déjà satisfait avec le modèle.
 
 ### Annexe 3.2 : Structure des données imputées par régression stochastique
 ```{r imputed1}
@@ -604,11 +592,17 @@ summary(dHB)
 summary(dHBcompl.rf)
 ```
 
+
 ### Annexe 3.4 : Structure des données imputées par pmm
 ```{r imputed3}
 summary(dHBcompl.pmm)
 ```
 
+### Annexe 3.5 : Imputation par ACP   
+graphique des dimensions 
+```{r dim_pca2}
+plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",ylab="", type="b")
+```
 
 ## Annexe 4.1 Diagnostic 2 : convergence des algorithmes. 
 
@@ -620,7 +614,7 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 ```
 
 
-## Annexe 4.2 Comparaison des residuals 
+## Annexe 4.2 : Comparaison des résidus 
 
 ```{r residualspmm}
 par(mfrow = c(2, 2))
