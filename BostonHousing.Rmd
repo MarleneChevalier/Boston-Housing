@@ -56,6 +56,9 @@ library(missForest)
 # options globales
 opts_chunk$set(echo=FALSE,warning=FALSE)
 
+# parametrage des graphiques
+theme_set=(theme_classic()+theme(plot.title=element_text(hjust=0.5,size=14,face="bold"),plot.subtitle=element_text(hjust=0.5,size=12) ,axis.title=element_text(size=10)))  
+
 # chargement des données
 dHB=read.table("HousingData.csv",sep=",",header=TRUE)
 attach(dHB)
@@ -131,10 +134,10 @@ Les corrélations les plus significatives de la valeur du logement sont avec :
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.3**)
 
 Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset.   
-Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche (0.76) de l'original. (*cf. annexe 1.4*)
+Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche (0.76) de l'original. (**cf. annexe 1.4**)
 
 Cependant, en regardant le graphique des résidus (**cf. annexe 1.5**) nous observons que le modèle n'est pas optimal : il semblerait qu'il y a une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.6**)  et observons que la variable LSTAT n'a pas une relation polynomiale d'ordre 2. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.79) et les résidus s'améliorent nettement. (**cf. annexe 1.7**)
 
@@ -153,7 +156,7 @@ Le R² ajusté du modèle de regression sur jeu de données incomplet est de **0
 
 Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**), et LSTAT a une relation quadratique avec MEDV. 
 
-**Le meilleur modèle sur dataset incomplet testé ici est la regression lineaire du prix médian du logement sur l'ensemble des variables explicatives, hormi INDUS et AGE et avec LSTAT².**
+**Le meilleur modèle sur dataset incomplet testé ici est la regression lineaire du prix médian du logement sur l'ensemble des variables explicatives, hormis INDUS et AGE et avec LSTAT².**
 
 Nous allons comparer maintenant le meilleur modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
 
@@ -253,9 +256,10 @@ impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
 dHBcompl.regsto=complete(impregsto)
 regregsto=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.regsto)
 summary(regregsto)
+regsto.adjr2=round(summary(regregsto)$adj.r.squared,2)
 ```
 
-Avec cette méthode, on observe un R2 ajusté de **0.7806** après la régression linéaire faite avec le dataset completé. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
+Avec cette méthode, on observe un R2 ajusté de **`r regsto.adjr2`** après la régression linéaire faite avec le dataset completé. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatifs en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
 
@@ -269,10 +273,11 @@ impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
 regrf=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.rf)
 summary(regrf)
+regrf.adjr2=round(summary(regrf)$adj.r.squared,2)
 
 ```
 
-Avec cette méthode on observe un R2 ajusté de **0.783** avec le dataset completé, proche de celui obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
+Avec cette méthode on observe un R2 ajusté de **`r regrf.adjr2`** avec le dataset completé, proche de celui obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**. Ici le nouveau dataset completé est cohérent avec celui d'origine.
 
@@ -287,10 +292,11 @@ imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
 regpmm=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.pmm)
 summary(regpmm)
+regpmm.adjr2=round(summary(regrf)$adj.r.squared,2)
 
 ```
 
-De même que pour les deux méthodes précédentes, le R2 ajusté est très proche du modèle avec des données manquantes (**0.7808**). Les valeurs estimées et les résidus restent aussi très proches.
+De même que pour les deux méthodes précédentes, le R2 ajusté **`r regpmm.adjr2`**est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.4** et on observe que les valeurs mininimum, maximum et médianne sont presque idéntiques à celles obtenues avec les forêts aléatoires.
 
@@ -317,7 +323,7 @@ res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
 
 ```{r lm_pca}
 imppca= prelim(res.mi = res.bayesMIPCA, X = dHB)
-fit= with(data=imppca,exp = lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fit= with(data=imppca,exp = lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+I(LSTAT^2)))
 res.pool=pool(fit)
 summary(res.pool)
 
@@ -325,7 +331,7 @@ summary(res.pool)
 
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
 
-Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R2 ajusté, des estimateurs et des résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
+Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R2 ajusté, d'estimateurs et de résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
 # 4. Diagnostics et conclusion
 
