@@ -107,7 +107,7 @@ Graphiquement (*cf.annexe 1.1*), on observe que :
    
    - Le **taux de criminalité** faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
    - La **proportion de terrains résidentiels** est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
-   - La **proportion de surface d'activité industrielle** la plus fréquente est entre 18 et 20 acres (entre 72000m² et 80000m²). A ce niveau, la valeur moyenne est bien souvent inférieure à la valeur médiane moyenne des logements (22.5K$).  
+   - La **proportion de surface d'activité industrielle** la plus fréquente est entre 18 et 20 acres (entre 72 000m² et 80 000m²). A ce niveau, la valeur moyenne est bien souvent inférieure à la valeur médiane moyenne des logements (22.5K$).  
    - La **concentration d'oxyde d'*azote** est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
    - Le **nombre moyen de chambre** est le plus souvent entre 5 et 7. Plus le nombre de chambre augmente, plus les logements ont de la valeur.   
    - La **proportion de propriétés construites avant 1940** est très importante (majoritairement autour de 90% ). Plus cette proportion augmente, plus les logements ont de la valeur.  
@@ -131,18 +131,17 @@ Les corrélations les plus significatives de la valeur du logement sont avec :
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²=0.75) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (*cf. annexe 1.3*)
 
 Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset.   
-Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche de l'original. (*cf. annexe 1.4*)
+Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche (0.76) de l'original. (*cf. annexe 1.4*)
 
-Cependant, en regardant le graphique des résidus (*cf. annexe 1.5*) nous observons que le modèle n'est pas optimal, il semblerait qu'il y a une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (*cf. annexe 1.6*)  et observons que la variable LSTAT n'a pas une relation polynomiale d'ordre 2. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, les résidus s'améliorent nettement. (*cf. annexe 1.7*)
-
+Cependant, en regardant le graphique des résidus (**cf. annexe 1.5**) nous observons que le modèle n'est pas optimal : il semblerait qu'il y a une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.6**)  et observons que la variable LSTAT n'a pas une relation polynomiale d'ordre 2. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.79) et les résidus s'améliorent nettement. (**cf. annexe 1.7**)
 
 
 ## En conclusion sur l'exploration de données
 
-La valeur médiane du logement à Boston et ses environs est comprise entre 5K$ et 50K$. Sa distribution est croissante jusqu'a sa valeur moyenne (22.5K$) puis décroit fortement à partir de 25 K$.  
+La valeur médiane du logement à Boston et ses environs est comprise entre 5 et 50K dollars. Sa distribution est croissante jusqu'à sa valeur moyenne 22.5K dollars puis décroit fortement à partir de 25K dollars.  
 
 **La valeur du logement est influencée ** (p_value <5%): 
 
@@ -152,9 +151,11 @@ La valeur médiane du logement à Boston et ses environs est comprise entre 5K$ 
 Le R² ajusté du modèle de regression sur jeu de données incomplet est de **0.7965 (R² de référence)**.    
 (**cf. annexe 1.7** : résultat de la regression linéaire après selection de variable)
 
-Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**), et LSTAT a une relation quadratique avec MEDV.
+Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**), et LSTAT a une relation quadratique avec MEDV. 
 
-Nous allons comparer maintenant ce modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
+**Le meilleur modèle sur dataset incomplet testé ici est la regression lineaire du prix médian du logement sur l'ensemble des variables explicatives, hormi INDUS et AGE et avec LSTAT².**
+
+Nous allons comparer maintenant le meilleur modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
 
 
 # 2.Inventaire des données manquantes 
