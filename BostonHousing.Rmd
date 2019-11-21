@@ -98,9 +98,8 @@ maxMEDV=max(MEDV)
 ``` 
 La valeur médiane du logement à Boston est comprise entre `r minMEDV` K$ et `r maxMEDV` K$ , en moyenne de `r moyMEDV` K$.
 
-```{r expl}
-
-par(mfrow = c(1, 1), pch = 16, col="blue")
+```{r expl, fig.height = 3.5, fig.width = 5}
+##par(mfrow = c(1, 1), pch = 16, col="blue")
 hist(MEDV,main=NULL,xlab="valeur médiane du logement(K$)", ylab="fréquence", col="blue")
 abline(v=mean(MEDV), col="red")
 
@@ -134,11 +133,11 @@ Les corrélations les plus significatives de la valeur du logement sont avec :
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.4**)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.7591) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.4**)
 
-Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset. Ce modèle écarte les variables INDUS et AGE avec un R² ajusté très proche (0.76) de l'original. (**cf. annexe 1.5**)
+Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle. Cependant pour utiliser cette méthode, nous devons supprimer les lignes avec des données manquantes, avec le risque de perte d'information et d'introduction de biais au dataset. Ce modèle écarte aussi les variables INDUS et AGE avec un R² ajusté très proche (0.7598) de l'original. (**cf. annexe 1.5**)
 
-Cependant, en regardant le graphique des résidus (**cf. annexe 1.6**) nous observons que le modèle n'est pas optimal : il semble qu'il y ait une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.7**)  et observons une possible relation polynomiale d'ordre 2 LSTAT et MEDV. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.79) et les résidus s'améliorent nettement. (**cf. annexe 1.8**)
+Cependant, en regardant le graphique des résidus (**cf. annexe 1.6**) nous observons que le modèle n'est pas optimal : il semble qu'il y ait une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.7**)  et observons une possible relation polynomiale d'ordre 2 entre LSTAT et MEDV. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.7965) et les résidus s'améliorent nettement. (**cf. annexe 1.8**)
 
 
 ## En conclusion sur l'exploration de données
@@ -171,7 +170,7 @@ A chaque ligne de la matrice (qui définit une structure de données manquantes 
   - la première colonne indique le nombre d'observations correspondant à la structure de données manquantes décrite ;    
   - la derniere colonne donne le nombre de variables incomplètes.
 
-```{r inventDM1}
+```{r inventDM1, fig.height = 3.5, fig.width = 5}
 respattern=md.pattern(dHB,rotate.names = TRUE)
 ```
 
@@ -189,7 +188,7 @@ Une deuxième representation des données manquantes obtenue avec **matrixplot**
 
 La fonction **aggr** permet d'appréhender les données par leur proportion dans le jeu complet.
 
-```{r inventDM2}
+```{r inventDM2, fig.height = 3.5}
 aggr(dHB,numbers=TRUE,bars=FALSE)
 ```
 
@@ -208,7 +207,7 @@ Rubin (1976) a classé les problèmes des données manquantes en trois catégori
   - **Données manquantes de façon aléatoire : MAR** (missing at random). La probabilité d’absence de la valeur d’une variable dépend des valeurs prises par d’autres variables qui ont été observées. MAR est plus générale et plus réaliste que MCAR.
   - **Données manquantes de façon non aléatoire : MNAR ** (missing not at random). La cause d’absence de la valeur d’une variable est de raision inconnue. MNAR est le cas le plus complexe.
 
-La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR. Dans le cas du jeu de données Boston Housing, on peut aussi partir de cette hypothèse.
+La plupart des méthodes modernes de traitement des données manquantes partent de la supposition MAR. Dans le cas du jeu de données Boston Housing, par rapport à notre exploration initial, nous pouvons aussi partir de cette hypothèse.
 
 ## En conclusion sur l'inventaire des données manquantes 
 
@@ -340,7 +339,15 @@ summary(res.pool)
 
 ```
 
+
+```{r pca2}
+regpca=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=res.pool)
+summary(regpca)$adj.r.squared
+```
+
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
+
+De même que pour les autres, le R² ajusté **`r regpca.adjr2`** est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
 
 Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R² ajusté, d'estimateurs et de résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
@@ -401,7 +408,7 @@ res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 
 
 ```{r diagnostics3d, warning=FALSE}
 
-res.over3<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
+res.over4<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
 On observe que, quelque soit la méthode d'imputation, la plupart des intervalles de confiance des variables INDUS, AGE et LSTAT coupent la 1ere bissectrice  des méthodes : ce variables sont donc correctement imputées sur leurs données manquantes. 
@@ -457,7 +464,7 @@ summary(dHB)
 ### Annexe 1.2 : graphiques exploratoires du jeu de données
 Les répresentations graphiques donnent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de points de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
 
-```{r angraDM}
+```{r angraDM, fig.height = 3.5}
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(CRIM,main=NULL,xlab="taux de criminalité",ylab="fréquence", col="blue")
@@ -569,7 +576,7 @@ summary(model)
 ```
 
 ### Annexe 1.6 : Graphique des résidus du modèle
-```{r res}
+```{r res, fig.height = 3, fig.width = 5}
 plot(model, 1)
 ```
 
@@ -580,7 +587,7 @@ pairs(~ RAD + TAX + PTRATIO + B + LSTAT + MEDV, data = dHB)
 ```
 
 ### Annexe 1.8 : Jeu de données incomplet - regression linéaire apres sélection de variables et incluant relation ordre 2 avec LSTAT
-```{r multiple_regression}
+```{r multiple_regression, fig.height = 3, fig.width = 5}
 dHB2 <-na.omit(dHB)
 model2 <- lm(formula = MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2), data = dHB2)
 summary(model2)
@@ -590,7 +597,7 @@ plot(model2,1)
 
 ### Annexe 2.1 : Matrixplot données manquantes
 
-```{r inventDM3}
+```{r inventDM3, fig.height = 3, fig.width = 5}
 matrixplot(dHB,sortby="MEDV")
 ```
 
@@ -661,10 +668,11 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 
 ## Annexe 4.2 : Comparaison des résidus 
 
-```{r residualspmm}
-par(mfrow = c(2, 2))
-plot(model, 1, main="original")
-plot(regrf,1,main="Forêts aléatoires")
+```{r residualspmm, fig.height = 8, fig.width = 8}
+par(mfrow = c(3, 2))
+plot(model, 1, "original")
+plot(regrf,1,"Forêts aléatoires")
 plot(regregsto,1,"Régression stochastique")
-plot(regpmm, 1, main ="pmm")
+plot(regpmm, 1, "pmm")
+plot(regpca, 1, "PCA")
 ```
