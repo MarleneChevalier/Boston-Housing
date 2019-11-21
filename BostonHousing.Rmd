@@ -106,7 +106,7 @@ abline(v=mean(MEDV), col="red")
 
 ```
 
-Graphiquement (*cf.annexe 1.1*), on observe que :   
+Graphiquement (*cf.annexe 1.2*), on observe que :   
    
    - Le **taux de criminalité** faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
    - La **proportion de terrains résidentiels** est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
@@ -130,16 +130,15 @@ Les corrélations les plus significatives de la valeur du logement sont avec :
    - INDUS et RAD (-0.51) : plus l'espace d'affaires non commerciales ou plus l'indice d'accessibilité aux autoroutes seront importants, moins la valeur du bien sera élevée.    
    - PTRATIO (-0.54) : plus le ratio elèves-enseignants est fort, moins la valeur des biens est élevée.  
    - LSTAT (-0.74) : une forte proportion de population précaire réduira très fortement la valeur des biens.  
-(*cf. annexe 1.2*)
+(*cf. annexe 1.3*)
 
 ## Modélisation sur les données incomplètes
 
-Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.3**)
+Nous commençons par examiner les résultats d'une regression linéaire de MEDV sur les autres variables. Le modèle est correctement ajusté (R²ajusté=0.76) mais il semble que les variables explicatives INDUS et AGE ne soient pas pertinentes pour ce modèle. (**cf. annexe 1.4**)
 
-Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset.   
-Ce modèle écarte les variables INDUS et AGE avec un R2 ajusté très proche (0.76) de l'original. (**cf. annexe 1.4**)
+Nous allons appliquer une méthode "step AIC" pour choisir le meilleur modèle avec le risque de perte d'information et d'introduction de biais au dataset. Ce modèle écarte les variables INDUS et AGE avec un R² ajusté très proche (0.76) de l'original. (**cf. annexe 1.5**)
 
-Cependant, en regardant le graphique des résidus (**cf. annexe 1.5**) nous observons que le modèle n'est pas optimal : il semblerait qu'il y a une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.6**)  et observons que la variable LSTAT n'a pas une relation polynomiale d'ordre 2. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.79) et les résidus s'améliorent nettement. (**cf. annexe 1.7**)
+Cependant, en regardant le graphique des résidus (**cf. annexe 1.6**) nous observons que le modèle n'est pas optimal : il semble qu'il y ait une relation non linéaire avec une ou plusieurs variables. Pour la trouver, nous faisons un graphique par pairs (**cf. annexe 1.7**)  et observons une possible relation polynomiale d'ordre 2 LSTAT et MEDV. Si nous corrigeons notre modèle en ajoutant un ordre quadratique, le R² ajusté est légèrement meilleur (0.79) et les résidus s'améliorent nettement. (**cf. annexe 1.8**)
 
 
 ## En conclusion sur l'exploration de données
@@ -152,11 +151,11 @@ La valeur médiane du logement à Boston et ses environs est comprise entre 5 et
   
   **- négativement** principalement (coefficient estimé = -14.71) **par la concentration en oxyde d'azote** et plus faiblement (coefficients estimés entre de -1.34, -0.76, -1.45, -0.01) **par la distance aux centres d'emplois, le ratio élèves-enseignants, la proportion de population précaire et le taux foncier**   
 Le R² ajusté du modèle de regression sur jeu de données incomplet est de **0.7965 (R² de référence)**.    
-(**cf. annexe 1.7** : résultat de la regression linéaire après selection de variable)
+(**cf. annexe 8** : résultat de la regression linéaire après selection de variable)
 
-Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.3**), et LSTAT a une relation quadratique avec MEDV. 
+Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.4**), et LSTAT a une relation quadratique avec MEDV. 
 
-**Le meilleur modèle sur dataset incomplet testé ici est la regression lineaire du prix médian du logement sur l'ensemble des variables explicatives, hormis INDUS et AGE et avec LSTAT².**
+**Le meilleur modèle sur dataset incomplet testé ici est la regression lineaire du prix médian du logement, MEDV, sur l'ensemble des variables explicatives, hormis INDUS et AGE et incluant LSTAT².**
 
 Nous allons comparer maintenant le meilleur modèle obtenu avec des données manquantes et les nouveaux modèles que nous allons obtenir avec des datasets complets à partir de differentes méthodes. 
 
@@ -230,18 +229,17 @@ Sur le jeu de données, 22% des individus sont incomplets
 
 ## Imputation multiple
 
-Les méthodes d'imputation simple consistent à remplacer chaque valeur manquante par une valeur unique prédite ou simulée.  
-Plusieurs solutions sont possibles (remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées...). Ces solutions rapides sont à éviter car cela peut dégrader l'information (corrélation entre les variables, modification de la distribution des variables, variables sous-estimées ...). Nous allons utiliser uniquement l'imputation multiple pour notre projet.  
+Les méthodes d'imputation simple consistent à remplacer chaque valeur manquante par une valeur unique prédite ou simulée. Plusieurs solutions sont possibles : remplacer les données manquantes par la moyenne de la variable, faire une régression avec les données observées.... Ces solutions rapides sont à éviter car elle peuvent dégrader l'information (corrélation entre les variables, modification de la distribution des variables, variables sous-estimées ...). Nous allons utiliser uniquement l'imputation multiple pour notre projet.  
 
 L'imputation multiple va créer m datasets complets, au lieu d'imputer une seule fois comme l'imputation simple. Les méthodes d'imputation multiple suivent trois grandes étapes :
 
-**Etape 1** : Imputation des données manquantes m fois  
-**Etape 2** : Analyse de m datasets imputés  
-**Etape 3** : Mise en commun des paramètres à travers m analyses  
+  - **Etape 1** : Imputation des données manquantes m fois  
+  - **Etape 2** : Analyse de m datasets imputés  
+  - **Etape 3** : Mise en commun des paramètres à travers m analyses  
 
-Plus de détail sur la méthodologie se trouve sur l'**annexe 3.1** 
+Plus de détails sur la méthodologie se trouve sur l'**annexe 3.1** 
 
-Nous allons ici tester plusieurs méthodes d'imputation multiple : l'imputation par regression stochastique, les forêts aléatoires, predictive mean matching et l'ACP. Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car elles ne semblent pas pertinentes, selon les résultats des analyses précèdentes. 
+Nous allons ici tester plusieurs méthodes d'imputation multiple : l'imputation par regression stochastique, les forêts aléatoires, predictive mean matching et l'ACP. Nous allons appliquer ces méthodes à des modèles sans INDUS et AGE, car ces variables ne semblent pas pertinentes (cf.résultats de la partie 1). 
 
 
 ### Imputation par régression stochastique
@@ -251,33 +249,39 @@ Cette méthode consiste à imputer les données manquantes en utilisant la regre
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "norm.nob")**
 
 ```{r modimpregsto}
+t0.regsto=Sys.time() 
 impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
             seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
+t1.regsto=Sys.time() 
+tdiff.regsto= difftime(t1.regsto, t0.regsto, units="secs")
+
 regregsto=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.regsto)
 summary(regregsto)
 regsto.adjr2=round(summary(regregsto)$adj.r.squared,2)
 ```
 
-Avec cette méthode, on observe un R2 ajusté de **`r regsto.adjr2`** après la régression linéaire faite avec le dataset completé. C'est une R2 ajusté proche de celui obtenu avec la régression faite avec les données manquantes.
+Avec cette méthode, on observe un R² ajusté de **`r regsto.adjr2`** après la régression linéaire faite avec le dataset completé. Sa valeur est proche de celle obtenue pourla régression faite avec les données manquantes.
 
-La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatifs en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatives en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
 
 ### Imputation par forêts aléatoires
 
 Dans l'imputation par forêts aléatoire, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
 
 ```{r modimpforest, warning=FALSE}
-
+t0.rf=Sys.time() 
 impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
+t1.rf=Sys.time() 
+tdiff.rf= difftime(t1.rf, t0.rf, units="secs")
 regrf=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.rf)
 summary(regrf)
 regrf.adjr2=round(summary(regrf)$adj.r.squared,2)
 
 ```
 
-Avec cette méthode on observe un R2 ajusté de **`r regrf.adjr2`** avec le dataset completé, proche de celui obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
+Avec cette méthode on observe un R² ajusté de **`r regrf.adjr2`** avec le dataset completé, proche de celui obtenu avec la méthode d'imputation stochastique.  Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.3**. Ici le nouveau dataset completé est cohérent avec celui d'origine.
 
@@ -288,15 +292,19 @@ La méthode pmm commence par faire une regression linéaire de variable pour est
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
 
 ```{r modpmm}
+t0.pmm=Sys.time() 
 imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
+t1.pmm=Sys.time() 
+tdiff.pmm= difftime(t1.pmm, t0.pmm, units="secs")
+
 regpmm=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.pmm)
 summary(regpmm)
 regpmm.adjr2=round(summary(regrf)$adj.r.squared,2)
 
 ```
 
-De même que pour les deux méthodes précédentes, le R2 ajusté **`r regpmm.adjr2`**est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+De même que pour les deux méthodes précédentes, le R² ajusté **`r regpmm.adjr2`** est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
 
 La description de la nouvelle structure des données se trouve sur l'**annexe 3.4** et on observe que les valeurs mininimum, maximum et médianne sont presque idéntiques à celles obtenues avec les forêts aléatoires.
 
@@ -306,17 +314,20 @@ Les données manquantes sont imputées en utilisant la ACP (Analyse des composan
 Il s'agit d'abord d'estimer le nombre de composantes utilisés pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
 
 ```{r dim_pca1, include=FALSE}
+t0.acp=Sys.time() 
+
 nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
 ```
 
-Selon le graphique (cf. **annexe 3.5**), le nombre de dimensions à retenir sera de 3.
+Selon le graphique (cf. **annexe 3.5**), le nombre de dimensions à retenir est de 3.
 
    - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé et la méthode bayésienne.  
   fonction **MIPCA (avec method.mi = "Bayes")**  
  
 ```{r pca}
 res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
-
+t1.acp=Sys.time() 
+tdiff.acp= difftime(t1.acp, t0.acp, units="secs")
 ```
 
 **Régression linéaire sur le jeu de données complété par MIPCA**
@@ -331,7 +342,7 @@ summary(res.pool)
 
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
 
-Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R2 ajusté, d'estimateurs et de résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
+Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R² ajusté, d'estimateurs et de résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
 # 4. Diagnostics et conclusion
 
@@ -360,9 +371,10 @@ Pour la variable AGE, la régression stochastique et ACP imputent des valeurs pl
 La vérification de la convergence se fait à partir des graphiques de variation de la moyenne et de l'écart type, pour chaque  méthode, pour chaque itération et chaque donnée imputée.Pour que la convergence soit vérifiée, il faut que les différentes courbes se mélangent, sans une tendance particulière. C'est bien le cas pour nos graphiques; donc, nous n'avons pas de problème de convergence. (**cf.annexe 4.1**)
 
 ## Diagnostic 3 : vérifier l'ajustement du modèle d'imputation
-Pour cela, nous traçons le graphe d'overimputation.Chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs prédites. 
+Pour cela, nous traçons le graphe d'overimputation. Chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs prédites. 
 
-Sur ces graphiques, la 1ère bissectrice (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction de données manquantes (entre 0 - 20% pour notre cas).
+Sur ces graphiques, la 1ère bissectrice (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction de données manquantes (entre 0 - 20% pour notre cas).  
+Remarque : Comme CHAS n'est pas une variable continue, elle prend uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques.
 
 **Ajustement de la regression stochastique :**
 
@@ -392,9 +404,8 @@ res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 
 res.over3<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-Comme CHAS n'est pas une variable continue, elle prend uniquement les valeurs 0 et 1, elle n'apparaît pas dans les graphiques. 
-
-On observe que pour les variables INDUS, AGE et LSTAT la plupart des intervalles de confiance contiennent bien la ligne diagonale pour chacune des méthodes. Cependant, ce n'est pas le cas pour les variables CRIM et ZN.
+On observe que, quelque soit la méthode d'imputation, la plupart des intervalles de confiance des variables INDUS, AGE et LSTAT coupent la 1ere bissectrice  des méthodes : ce variables sont donc correctement imputées sur leurs données manquantes. 
+Par contre, l'imputation des données maquantes sur CRIM et ZN est moins satisfaisante : particulièrement sur les methodes de regression stochastique, de forêts aléatoires et PMM.
 
 ### Conclusion
 
@@ -402,22 +413,49 @@ D'après les trois diagnostics réalisés, les 4 méthodes d'imputation présent
 
 * Respectent bien la distribution des variables, même si la régression stochastique et l'ACP ne le font pas si bien que les autres.
 * Ne présentent pas de problème de convergence
-* Ne permettent pas de bien reconstruire les variables CRIM et ZN, qui ne sont pas toujours bien représentées (cf. overimputation).
+* Ne permettent pas de compléter de façon adéquate les variables CRIM et ZN (cf. overimputation).
 
-Par contre, si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps, même sur un dataset plutôt petit.
+Par contre, si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.
 
-Les résidus sont très proches quelques soient les modèles (cf.**annexe 4.2**). 
+Les coefficients R² ajustés (0.78) et les distributions des résidus (cf.**annexe 4.2**) de la regression linéaire sur le jeu de données complété sont très proches quelques soient les méthodes d'imputation utilisées . 
 
-Donc pour notre petit dataset, nous aurions obtenu les mêmes résultats pour la régression linéaire sans l'imputation. 
+**Résumé des performances des méthodes d'imputation**  
 
+| Critères      |Reg.stochastique |Random forest    | PMM           | ACP            |
+|:------------- |:---------------:|:---------------:|:-------------:|:--------------:|
+|D1:distribution|2/6              |5/6              |5/6            |2/6             |
+|D2:convergence |OK               |OK               |OK             |OK              |
+|D3:ajustement  |2/5              |4/5              |3/5            |5/5             |
+|Temps machine (sec) |`r tdiff.regsto` |`r tdiff.rf`|`r tdiff.pmm`  |`r tdiff.acp`   |
+|Modelisation de MEDV|              |              |               |                |
+|               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|              |
+|               |résidus proches 0|résidus proches 0|résidus proches 0|              |
 
+D'après ces éléments de performance, les imputations par forêts aléatoires ou PMM donnent les meilleurs résultats.  
+  
+  
+Sur le dataset étudié, nous obtenons des résultats proches pour la régression linéaire de MEDV, avec ou sans imputation des données manquantes. Cela peut s'expliquer par :
 
-**_________________________________________________________________________________**    
+  - la petite dimension du jeu de données.  
+  - le modèle de regression linéaire choisi qui n'inclut pas 2 des variables avec données manquantes (INDUS et AGE).   
+  
+  
+  
+  
+  
+  
+**_______________________________________________________________________________________________________________________________**    
+  
+  
+# Annexes
 
-# Annexes  
+### Annexe 1.1 : structure du jeu de données d'origine
+```{r strucdHB}
+summary(dHB)
+```
 
-### Annexe 1.1 : graphiques exploratoires du jeu de données
-Les répresentations graphiques donnent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de point de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
+### Annexe 1.2 : graphiques exploratoires du jeu de données
+Les répresentations graphiques donnent, pour chaque variable explicative, la distribution sous forme d'histogramme et le nuage de points de la variable vs la valeur médiane du logement (en rouge la valeur moyenne = 22.5K$).
 
 ```{r angraDM}
 
@@ -507,41 +545,41 @@ boxplot(MEDV~CHASf,xlab="proximité avec la rivière Charles",ylab="valeur médi
 abline(h=mean(MEDV), col="red")
 ```
 
-### Annexe 1.2 : corrélation entre les variables du jeu de données
+### Annexe 1.3 : corrélation entre les variables du jeu de données
 Les corrélations les plus significatives apparaissent en rouge.
 ```{r cor}
 cordBH=round(cor(dHB,use="complete.obs"),2)
 kable(ifelse(abs(cordBH)> 0.5, cell_spec(cordBH, "html", color = "red", 
     bold = T), cell_spec(cordBH, "html", color = "black")),format="markdown",digits=2)
-
+ 
 ```
 
-### Annexe 1.3 : regression lineaire MEDV sur l'ensemble des variables
+### Annexe 1.4 : Jeu de données incomplet - regression lineaire MEDV sur l'ensemble des variables
 ```{r modDM}
 reg1=lm(MEDV~.,data=dHB)
 summary(reg1)
 
 ```
 
-### Annexe 1.4 : regression linéaire MEDV sur variables choisies par stepAIC
+### Annexe 1.5 : Jeu de données incomplet -regression linéaire MEDV sur variables choisies par stepAIC
 ```{r stepwise}
 dHB2 <-na.omit(dHB)
 model <- lm(MEDV~.,data=dHB2) %>% stepAIC(trace = FALSE)
 summary(model)
 ```
 
-### Annexe 1.5 : Graphique des résidus du modèle
+### Annexe 1.6 : Graphique des résidus du modèle
 ```{r res}
 plot(model, 1)
 ```
 
-### Annexe 1.6 : pairs plot
+### Annexe 1.7 : pairs plot
 ```{r pairs}
 pairs(~ CRIM + ZN + CHAS + NOX + RM + DIS + MEDV, data = dHB)
 pairs(~ RAD + TAX + PTRATIO + B + LSTAT + MEDV, data = dHB)
 ```
 
-### Annexe 1.7 : regression linéaire multiple avec ordre 2
+### Annexe 1.8 : Jeu de données incomplet - regression linéaire apres sélection de variables et incluant relation ordre 2 avec LSTAT
 ```{r multiple_regression}
 dHB2 <-na.omit(dHB)
 model2 <- lm(formula = MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2), data = dHB2)
