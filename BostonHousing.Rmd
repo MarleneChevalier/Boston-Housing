@@ -110,7 +110,7 @@ Graphiquement (*cf.annexe 1.2*), on observe que :
    - Le **taux de criminalité** faible (inféreur à 10%) est le plus fréquent. La valeur du logement a tendance a diminué lorsque le taux de criminalité augmente. Mais la corrélation entre les 2 reste faible (0.4).  
    - La **proportion de terrains résidentiels** est majoritairement faible (inféreur à 10%), mais lorsqu'elle augmente, la valeur du logement a tendance a augmenté.  
    - La **proportion de surface d'activité industrielle** la plus fréquente est entre 18 et 20 acres (entre 72 000m² et 80 000m²). A ce niveau, la valeur moyenne est bien souvent inférieure à la valeur médiane moyenne des logements (22.5K$).  
-   - La **concentration d'oxyde d'*azote** est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
+   - La **concentration d'oxyde d'azote** est le plus souvent entre 0.4 et 0.6. Plus la concentration augmente, plus la valeur des logements diminue.  
    - Le **nombre moyen de chambre** est le plus souvent entre 5 et 7. Plus le nombre de chambre augmente, plus les logements ont de la valeur.   
    - La **proportion de propriétés construites avant 1940** est très importante (majoritairement autour de 90% ). Plus cette proportion augmente, plus les logements ont de la valeur.  
    - La **moyenne des distances aux centres d'emploi** est fréquemment faible (<4). Cette variable influence peu la valeur des logements (corrélation=0.28).  
@@ -150,7 +150,7 @@ La valeur médiane du logement à Boston et ses environs est comprise entre 5 et
   
   **- négativement** principalement (coefficient estimé = -14.71) **par la concentration en oxyde d'azote** et plus faiblement (coefficients estimés entre de -1.34, -0.76, -1.45, -0.01) **par la distance aux centres d'emplois, le ratio élèves-enseignants, la proportion de population précaire et le taux foncier**   
 Le R² ajusté du modèle de regression sur jeu de données incomplet est de **0.7965 (R² de référence)**.    
-(**cf. annexe 8** : résultat de la regression linéaire après selection de variable)
+(**cf. annexe 1.8** : résultat de la regression linéaire après selection de variable)
 
 Les variables INDUS et AGE ne sont pas significatives dans l'explication de la valeur du logement (p-value>5% **cf. annexe 1.4**), et LSTAT a une relation quadratique avec MEDV. 
 
@@ -182,7 +182,7 @@ Au total, 120 observations sont manquantes : 20 pour chacune des variables CRIM,
   ...
   - structure 14 (dernière) : 1 observation pour laquelle les données des variables CRIM et CHAS sont absentes.
  
-Une deuxième representation des données manquantes obtenue avec **matrixplot** peut être observé en **annexe 2.1**. Elle permet d'identifier des dépendences des valeurs extrêmes et des données manquantes. Les données observées sont en gris et les manquantes en rouge. Nous pouvons observer que les valeurs manquantes se répartissent bien dans l'ensemble du jeu de données.
+Une deuxième représentation des données manquantes obtenue avec **matrixplot** peut être observé en **annexe 2.1**. Elle permet d'identifier des dépendences des valeurs extrêmes et des données manquantes. Les données observées sont en bleu et les manquantes en rouge. Nous pouvons observer que les valeurs manquantes se répartissent bien dans l'ensemble du jeu de données.
  
 ## Proportion de données manquantes
 
@@ -260,13 +260,13 @@ summary(regregsto)
 regsto.adjr2=round(summary(regregsto)$adj.r.squared,2)
 ```
 
-Avec cette méthode, on observe un R² ajusté de **`r regsto.adjr2`** après la régression linéaire faite avec le dataset completé. Sa valeur est proche de celle obtenue pourla régression faite avec les données manquantes.
+Avec cette méthode, on observe un R² ajusté de **`r regsto.adjr2`** après la régression linéaire faite avec le dataset completé. Sa valeur est proche de celle obtenue pour la régression faite avec les données manquantes.
 
-La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatives en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
+La description de la nouvelle structure des données se trouve sur l'**annexe 3.2**. Sur cette description, nous observons que pour deux variables (CRIM et LSTAT), l'imputation propose des valeurs négatives en sachant que sur le dataset d'origine ces deux variables sont toujours positives.
 
 ### Imputation par forêts aléatoires
 
-Dans l'imputation par forêts aléatoire, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
+Dans l'imputation par forêts aléatoires, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
 
 ```{r modimpforest, warning=FALSE}
 t0.rf=Sys.time() 
@@ -286,7 +286,7 @@ La description de la nouvelle structure des données se trouve sur l'**annexe 3.
 
 ### Imputation par predictive mean matching
 
-La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante. Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue alors la valeur observée pour remplacer la valeur manquante. 
+La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite, on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante. Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue alors la valeur observée pour remplacer la valeur manquante. 
 
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
 
@@ -309,8 +309,8 @@ La description de la nouvelle structure des données se trouve sur l'**annexe 3.
 
 ## Imputation à l'aide d'un traitement bayésien de l'ACP
 
-Les données manquantes sont imputées en utilisant la ACP (Analyse des composantes principales).  
-Il s'agit d'abord d'estimer le nombre de composantes utilisés pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
+Les données manquantes sont imputées en utilisant l'ACP (Analyse des Composantes Principales).  
+Il s'agit d'abord d'estimer le nombre de composantes utilisées pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
 
 ```{r dim_pca1, include=FALSE}
 t0.acp=Sys.time() 
@@ -342,7 +342,7 @@ summary(res.pool)
 
 ```{r pca2}
 regpca=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=res.pool)
-summary(regpca)$adj.r.squared
+regpca.adjr2=round(summary(regpca)$adj.r.squared)
 ```
 
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
@@ -363,21 +363,14 @@ densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. 
-
-Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.
-
-Les méthodes de régression stochastique et d'ACP imputent des valeurs plus basses que celles observées dans la distribution originale des variables CRIM, ZN et AGE. Par contre, les imputations par les méthodes pmm et les forêts aléatoires respectent mieux la distribution originales des variables.
-
-Pour la variable CRIM, les valeurs observées plus grandes se trouvent uniquement sur l'imputation par forêt aléatoire. 
-
-Pour la variable AGE, la régression stochastique et ACP imputent des valeurs plus grandes (proches de 200) que celles observées (autour de 100).
+Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.  
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
 La vérification de la convergence se fait à partir des graphiques de variation de la moyenne et de l'écart type, pour chaque  méthode, pour chaque itération et chaque donnée imputée.Pour que la convergence soit vérifiée, il faut que les différentes courbes se mélangent, sans une tendance particulière. C'est bien le cas pour nos graphiques; donc, nous n'avons pas de problème de convergence. (**cf.annexe 4.1**)
 
 ## Diagnostic 3 : vérifier l'ajustement du modèle d'imputation
+
 Pour cela, nous traçons le graphe d'overimputation. Chaque donnée observée est supprimée et pour chacune d'entre elles, 100 valeurs sont predites (en utilisant la même méthode d'imputation choisie); la moyenne et des intervalles de confiance de 90% sont calculés pour ces valeurs prédites. 
 
 Sur ces graphiques, la 1ère bissectrice (y=x) représente l'imputation parfaite. La qualité de l'imputation se mesure en observant la proximité des intervalles de confiance avec cette droite. On espère que 90% des intervalles traversent la 1ere bissectrice. La couleur des intervalles represente la fraction de données manquantes (entre 0 - 20% pour notre cas).  
@@ -411,8 +404,8 @@ res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 
 res.over4<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
-On observe que, quelque soit la méthode d'imputation, la plupart des intervalles de confiance des variables INDUS, AGE et LSTAT coupent la 1ere bissectrice  des méthodes : ce variables sont donc correctement imputées sur leurs données manquantes. 
-Par contre, l'imputation des données maquantes sur CRIM et ZN est moins satisfaisante : particulièrement sur les methodes de regression stochastique, de forêts aléatoires et PMM.
+On observe que, quelque soit la méthode d'imputation, la plupart des intervalles de confiance des variables INDUS, AGE et LSTAT coupent la 1ere bissectrice  des méthodes : ces variables sont donc correctement imputées sur leurs données manquantes. 
+Par contre, l'imputation des données manquantes sur CRIM et ZN est moins satisfaisante : particulièrement sur les méthodes de regression stochastique, de forêts aléatoires et PMM.
 
 ### Conclusion
 
@@ -422,23 +415,23 @@ D'après les trois diagnostics réalisés, les 4 méthodes d'imputation présent
 * Ne présentent pas de problème de convergence
 * Ne permettent pas de compléter de façon adéquate les variables CRIM et ZN (cf. overimputation).
 
-Par contre, si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.
+Si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.(99s=1 minute 39)
 
-Les coefficients R² ajustés (0.78) et les distributions des résidus (cf.**annexe 4.2**) de la regression linéaire sur le jeu de données complété sont très proches quelques soient les méthodes d'imputation utilisées . 
+La qualité de la régression linéaire sur le jeu de données complété est très proche quelques soient les méthodes d'imputation utilisées : les R² ajustés sont quasiment les memes (0.78) et les distributions des résidus oscillent autour de 0 (cf.**annexe 4.2**). 
 
 **Résumé des performances des méthodes d'imputation**  
 
 | Critères      |Reg.stochastique |Random forest    | PMM           | ACP            |
 |:------------- |:---------------:|:---------------:|:-------------:|:--------------:|
-|D1:distribution|2/6              |5/6              |5/6            |2/6             |
-|D2:convergence |OK               |OK               |OK             |OK              |
-|D3:ajustement  |2/5              |4/5              |3/5            |5/5             |
+|Diag.1 : distribution|3/6        |5/6              |5/6            |3/6             |
+|Diag.2 : convergence |OK         |OK               |OK             |OK              |
+|Diag.3 : ajustement  |3/5        |3/5              |3/5            |5/5             |
 |Temps machine (sec) |`r tdiff.regsto` |`r tdiff.rf`|`r tdiff.pmm`  |`r tdiff.acp`   |
-|Modelisation de MEDV|              |              |               |                |
-|               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|              |
+|Modelisation de MEDV|            |                 |               |                |
+|               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|               |
 |               |résidus proches 0|résidus proches 0|résidus proches 0|              |
 
-D'après ces éléments de performance, les imputations par forêts aléatoires ou PMM donnent les meilleurs résultats.  
+D'après ces éléments de performance, les imputations par PMM ou forêts aléatoires donnent les meilleurs résultats.  
   
   
 Sur le dataset étudié, nous obtenons des résultats proches pour la régression linéaire de MEDV, avec ou sans imputation des données manquantes. Cela peut s'expliquer par :
@@ -452,6 +445,7 @@ Sur le dataset étudié, nous obtenons des résultats proches pour la régressio
   
   
 **_______________________________________________________________________________________________________________________________**    
+  
   
   
 # Annexes
@@ -468,59 +462,59 @@ Les répresentations graphiques donnent, pour chaque variable explicative, la di
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(CRIM,main=NULL,xlab="taux de criminalité",ylab="fréquence", col="blue")
-plot(CRIM,MEDV,xlab="taux de criminalité",ylab="valeur médiane du logement (K$)")
+plot(CRIM,MEDV,xlab="taux de criminalité",ylab="valeur médiane du logement (K$)",cex.ylab=1)
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et taux de criminalité")
+title("Valeur médiane du logement et taux de criminalité",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(ZN,main=NULL,xlab="prop.terrains résidentiels",ylab="fréquence", col="blue")
 plot(ZN,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title(main="Valeur médiane du logement et proportion de terrains résidentiels")
+title(main="Valeur médiane du logement et proportion de terrains résidentiels",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(INDUS,main=NULL,xlab="prop.surface activité industrielle",ylab="fréquence", col="blue")
 plot(INDUS,MEDV,xlab="prop.surface activité industrielle",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title(main="Valeur médiane du logement et proportion de surface d'activité industrielle")
+title(main="Valeur médiane du logement et proportion de surface d'activité industrielle",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(NOX,main=NULL,xlab="concentration oxyde d'azote (1/10M)",ylab="fréquence", col="blue")
 plot(NOX,MEDV,xlab="concentration oxyde d'azote (1/10M)",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et concentration en oxyde d'azote")
+title("Valeur médiane du logement et concentration en oxyde d'azote",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(RM,main=NULL,xlab="nombre de chambre",ylab="fréquence", col="blue")
 plot(RM,MEDV,xlab="nombre de chambre",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et nombre moyen de chambre")
+title("Valeur médiane du logement et nombre moyen de chambre",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(AGE,main=NULL,xlab="prop. construites avant 1940",ylab="fréquence", col="blue")
 plot(AGE,MEDV,xlab="prop. construites avant 1940",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur du logement et proportion de propriétes construites avant 1940")
+title("Valeur du logement et proportion de propriétes construites avant 1940",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(DIS,main=NULL,xlab="distance moyenne aux centres d'emplois",ylab="fréquence", col="blue")
 plot(DIS,MEDV,xlab="distance moyenne aux centres d'emplois",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur du logement et distance moyenne aux 5 centres d'emplois")
+title("Valeur du logement et distance moyenne aux 5 centres d'emplois",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(TAX,main=NULL,xlab="taux d'imposition foncier (1/10K$",ylab="fréquence", col="blue")
 plot(TAX,MEDV,xlab="taux d'imposition foncier (1/10K$",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et taux d'imposition foncier")
+title("Valeur médiane du logement et taux d'imposition foncier",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(PTRATIO,main=NULL,xlab="ratio élèves-enseignants",ylab="fréquence", col="blue")
@@ -534,14 +528,14 @@ hist(B,main=NULL,xlab="proportion de population afro-américaine",ylab="fréquen
 plot(B,MEDV,xlab="proportion de population afro-américaine",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur du logement et proportion de population afro-américaine")
+title("Valeur du logement et proportion de population afro-américaine",cex.main=1)
 
 par(mfrow = c(1, 2), pch = 16, col="blue")
 hist(LSTAT,main=NULL,xlab="proportion de population précaire",ylab="fréquence", col="blue")
 plot(LSTAT,MEDV,xlab="proportion de population précaire",ylab="valeur médiane du logement (K$)")
 abline(a=mean(MEDV),b=0, col="red")
 par(mfrow = c(1, 1))
-title("Valeur médiane du logement et proportion de population précaire")
+title("Valeur médiane du logement et proportion de population précaire",cex.main=1)
 
 par(mfrow = c(1, 2))
 RADf=factor(RAD)
