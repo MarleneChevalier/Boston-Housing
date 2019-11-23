@@ -3,8 +3,8 @@ title: 'Projet : Méthodes de traitement de données manquantes'
 author: "Olga Silva / Marlène Chevalier"
 date: "30/11/2019"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 <style type="text/css">
@@ -243,14 +243,13 @@ Nous allons ici tester plusieurs méthodes d'imputation multiple : l'imputation 
 
 ### Imputation par régression stochastique
 
-Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides d'imputation simple. Nous fixons m=6, en suivant les conseils de Stef Van Buuren dans son livre "flexible imputation data".
+Cette méthode consiste à imputer les données manquantes en utilisant la regression à laquelle on a ajouté du bruit. Cela permet de corriger le biais de corrélation qui existe par les méthodes plus rapides d'imputation simple. Nous pouvons fiver un m de taille moderé, en suivant les conseils de Stef Van Buuren dans son livre "flexible imputation data". Nous allons le fixer à 50, pour diminuer l'erreur dû à la simulation.
 
 Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "norm.nob")**
 
 ```{r modimpregsto}
 t0.regsto=Sys.time() 
-impregsto = mice(dHB, method = "norm.nob", m = 6, maxit = 60,
-            seed = 600, print=FALSE)
+impregsto = mice(dHB, method = "norm.nob", m = 50, seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
 t1.regsto=Sys.time() 
 tdiff.regsto= difftime(t1.regsto, t0.regsto, units="secs")
@@ -266,11 +265,11 @@ La description de la nouvelle structure des données se trouve sur l'**annexe 3.
 
 ### Imputation par forêts aléatoires
 
-Dans l'imputation par forêts aléatoires, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=6
+Dans l'imputation par forêts aléatoires, les valeurs sont imputées en faisant des tirages aléatoires à partir des distributions gaussiennes independantes, centrées en les moyennes prédites par les forêts aléatoires. Pour ce faire , nous utilisons la fonction **mice ( avec method = "rf")**, avec m=50
 
 ```{r modimpforest, warning=FALSE}
 t0.rf=Sys.time() 
-impforest = mice(dHB, method = "rf", m = 6, seed = 600, print=FALSE)
+impforest = mice(dHB, method = "rf", m = 50, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
 t1.rf=Sys.time() 
 tdiff.rf= difftime(t1.rf, t0.rf, units="secs")
@@ -288,18 +287,18 @@ La description de la nouvelle structure des données se trouve sur l'**annexe 3.
 
 La méthode pmm commence par faire une regression linéaire de variable pour estimer les paramètres de la distribution qui lie les variables avec données manquantes X et les variables complètes Y du dataset.  A l'aide de cette distribution, on simule des prédictions de valeurs manquantes et présentes de la variable X. Ensuite, on identifie pour chaque donnée manquante de X un ensemble de prédiction sur les valeurs présentes de X, proches de la prédiction sur la valeur manquante. Parmi cet ensemble de cas proches, on en choisit un au hasard et on attribue alors la valeur observée pour remplacer la valeur manquante. 
 
-Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=6
+Pour faire cette imputation, nous utilisons la fonction **mice ( avec method = "pmm")**, m=50
 
 ```{r modpmm}
 t0.pmm=Sys.time() 
-imppmm = mice(dHB, method = "pmm", m = 6, seed = 600, print=FALSE)
+imppmm = mice(dHB, method = "pmm", m = 50, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
 t1.pmm=Sys.time() 
 tdiff.pmm= difftime(t1.pmm, t0.pmm, units="secs")
 
 regpmm=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.pmm)
 summary(regpmm)
-regpmm.adjr2=round(summary(regrf)$adj.r.squared,2)
+regpmm.adjr2=round(summary(regpmm)$adj.r.squared,2)
 
 ```
 
@@ -310,21 +309,30 @@ La description de la nouvelle structure des données se trouve sur l'**annexe 3.
 ## Imputation à l'aide d'un traitement bayésien de l'ACP
 
 Les données manquantes sont imputées en utilisant l'ACP (Analyse des Composantes Principales).  
-Il s'agit d'abord d'estimer le nombre de composantes utilisées pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
 
-```{r dim_pca1, include=FALSE}
+Cette méthode fonctionne mieux quand la relation entre les variables continues est linéaire. Selon le pairplot que si trouve sur l'annexe 1.7, nous devrions transformer les variables CRIM et ZN, avant de faire l'imputation par ACP. Nous allons appliquer une tansformation avec la racine carré d'abord.
+
+```{r transformation}
+dHB_trans<-dHB
+dHB_trans[,c(1,2)]<-sqrt(dHB_trans[,c(1,2)])
+
+```
+
+Ensuite, il s'agit d'abord d'estimer le nombre de composantes utilisées pour compléter les données avec la méthode de ACP : fonction **estim_ncpPCA(dHB,method.cv = "Kfold")** 
+
+```{r dim_pca1, , include=FALSE}
 t0.acp=Sys.time() 
 
-nb.kfold = estim_ncpPCA(dHB,method.cv = "Kfold")
+nb.kfold = estim_ncpPCA(dHB_trans,method.cv = "Kfold")
 ```
 
 Selon le graphique (cf. **annexe 3.5**), le nombre de dimensions à retenir est de 3.
 
    - générer les ensembles de données imputées avec la fonction MIPCA en utilisant le nombre de dimensions précédemment calculé et la méthode bayésienne.  
-  fonction **MIPCA (avec method.mi = "Bayes")**  
+  fonction **MIPCA (avec method.mi = "Bayes")**, avec nboot = 50 (m)
  
 ```{r pca}
-res.bayesMIPCA = MIPCA(dHB,ncp=nb.kfold$ncp,verbose=FALSE,method.mi = "Bayes")
+res.bayesMIPCA = MIPCA(dHB_trans,ncp=nb.kfold$ncp,nboot=50,verbose=FALSE,method.mi = "Bayes")
 t1.acp=Sys.time() 
 tdiff.acp= difftime(t1.acp, t0.acp, units="secs")
 ```
@@ -339,15 +347,14 @@ summary(res.pool)
 
 ```
 
-
-```{r pca2}
-regpca=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=res.pool)
-regpca.adjr2=round(summary(regpca)$adj.r.squared)
+```{r pca3}
+r2.adjr2=round(pool.r.squared(fit,adjusted=TRUE)[1],2)
+r2.adjr2
 ```
 
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
 
-De même que pour les autres, le R² ajusté **`r regpca.adjr2`** est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
+De même que pour les autres, le R² ajusté **`r r2.adjr2`** est très proche du modèle avec des données manquantes. Les valeurs estimées et les résidus restent aussi très proches.
 
 Nous avons testé 4 méthodes d'imputation, qui nous ont permis de faire des régressions avec le jeu de données complet. Ces régressions ont des résultats très proches en terme de R² ajusté, d'estimateurs et de résidus. Nous allons faire des diagnostics pour choisir le meilleur modèle d'imputation. 
 
@@ -363,7 +370,10 @@ densityplot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 densityplot(imppca, main="ACP", layout = c(2, 3))
 ```
 
-Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution. Par contre pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire. Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution.  
+Un analyse par variable:
+* Pour la variable CRIM, aucune méthode ne semble parvenir à reproduire la même distribution, mais les forêts aléatoires et pmm s'approchent plus. L'ACP arrive à bien le faire pour le début de la distribution, mais ne le fait pas pour la queue.
+* Pour INDUS, AGE et LSTAT, toutes les méthodes semblent réussir à le faire, mais les deux bosses sont mieux réproduites par forêts aléatoires et pmm
+* Pour CHAS et ZN, les forêts aléatoires sont les plus proches de la vraie distribution. Pour CHAS une imputation comme variable catégorielle pourrait changer le résultats.
 
 ## Diagnostic 2 : vérifier la convergence des algorithmes. 
 
@@ -415,7 +425,7 @@ D'après les trois diagnostics réalisés, les 4 méthodes d'imputation présent
 * Ne présentent pas de problème de convergence
 * Ne permettent pas de compléter de façon adéquate les variables CRIM et ZN (cf. overimputation).
 
-Si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.(99s=1 minute 39)
+Si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.
 
 La qualité de la régression linéaire sur le jeu de données complété est très proche quelques soient les méthodes d'imputation utilisées : les R² ajustés sont quasiment les memes (0.78) et les distributions des résidus oscillent autour de 0 (cf.**annexe 4.2**). 
 
@@ -425,13 +435,13 @@ La qualité de la régression linéaire sur le jeu de données complété est tr
 |:------------- |:---------------:|:---------------:|:-------------:|:--------------:|
 |Diag.1 : distribution|3/6        |5/6              |5/6            |3/6             |
 |Diag.2 : convergence |OK         |OK               |OK             |OK              |
-|Diag.3 : ajustement  |3/5        |3/5              |3/5            |5/5             |
+|Diag.3 : ajustement  |3/5        |4/5              |4/5            |5/5             |
 |Temps machine (sec) |`r tdiff.regsto` |`r tdiff.rf`|`r tdiff.pmm`  |`r tdiff.acp`   |
 |Modelisation de MEDV|            |                 |               |                |
 |               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|               |
 |               |résidus proches 0|résidus proches 0|résidus proches 0|              |
 
-D'après ces éléments de performance, les imputations par PMM ou forêts aléatoires donnent les meilleurs résultats.  
+D'après ces éléments de performance, les imputations par PMM ou forêts aléatoires donnent les meilleurs résultats pour notre cas.  
   
   
 Sur le dataset étudié, nous obtenons des résultats proches pour la régression linéaire de MEDV, avec ou sans imputation des données manquantes. Cela peut s'expliquer par :
@@ -447,7 +457,7 @@ Sur le dataset étudié, nous obtenons des résultats proches pour la régressio
 **_______________________________________________________________________________________________________________________________**    
   
   
-  
+ 
 # Annexes
 
 ### Annexe 1.1 : structure du jeu de données d'origine
@@ -646,7 +656,7 @@ summary(dHBcompl.pmm)
 
 ### Annexe 3.5 : Imputation par ACP   
 graphique des dimensions 
-```{r dim_pca2}
+```{r dim_pca2,fig.height = 3, fig.width = 4}
 plot(nb.kfold$criterion~names(nb.kfold$criterion),xlab="nb de critères",ylab="", type="b")
 ```
 
@@ -668,5 +678,6 @@ plot(model, 1, "original")
 plot(regrf,1,"Forêts aléatoires")
 plot(regregsto,1,"Régression stochastique")
 plot(regpmm, 1, "pmm")
+regpca=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=res.pool)
 plot(regpca, 1, "PCA")
 ```
