@@ -252,7 +252,7 @@ t0.regsto=Sys.time()
 impregsto = mice(dHB, method = "norm.nob", m = 50, seed = 600, print=FALSE)
 dHBcompl.regsto=complete(impregsto)
 t1.regsto=Sys.time() 
-tdiff.regsto= difftime(t1.regsto, t0.regsto, units="secs")
+tdiff.regsto= round(difftime(t1.regsto, t0.regsto, units="secs"),2)
 
 regregsto=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.regsto)
 summary(regregsto)
@@ -272,7 +272,7 @@ t0.rf=Sys.time()
 impforest = mice(dHB, method = "rf", m = 50, seed = 600, print=FALSE)
 dHBcompl.rf=complete(impforest)
 t1.rf=Sys.time() 
-tdiff.rf= difftime(t1.rf, t0.rf, units="secs")
+tdiff.rf= round(difftime(t1.rf, t0.rf, units="secs"),2)
 regrf=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.rf)
 summary(regrf)
 regrf.adjr2=round(summary(regrf)$adj.r.squared,2)
@@ -294,7 +294,7 @@ t0.pmm=Sys.time()
 imppmm = mice(dHB, method = "pmm", m = 50, seed = 600, print=FALSE)
 dHBcompl.pmm=complete(imppmm)
 t1.pmm=Sys.time() 
-tdiff.pmm= difftime(t1.pmm, t0.pmm, units="secs")
+tdiff.pmm= round(difftime(t1.pmm, t0.pmm, units="secs"),2)
 
 regpmm=lm(MEDV ~ CRIM + ZN + CHAS + NOX + RM + DIS + RAD + TAX + PTRATIO + B + LSTAT+ I(LSTAT^2),data=dHBcompl.pmm)
 summary(regpmm)
@@ -334,7 +334,7 @@ Selon le graphique (cf. **annexe 3.5**), le nombre de dimensions à retenir est 
 ```{r pca}
 res.bayesMIPCA = MIPCA(dHB_trans,ncp=nb.kfold$ncp,nboot=50,verbose=FALSE,method.mi = "Bayes")
 t1.acp=Sys.time() 
-tdiff.acp= difftime(t1.acp, t0.acp, units="secs")
+tdiff.acp= round(difftime(t1.acp, t0.acp, units="secs"),2)
 ```
 
 **Régression linéaire sur le jeu de données complété par MIPCA**
@@ -349,7 +349,6 @@ summary(res.pool)
 
 ```{r pca3}
 r2.adjr2=round(pool.r.squared(fit,adjusted=TRUE)[1],2)
-r2.adjr2
 ```
 
 Les valeurs des estimateurs sont très proches de celles trouvées par les autres méthodes d'imputation multiple. 
@@ -390,27 +389,23 @@ Remarque : Comme CHAS n'est pas une variable continue, elle prend uniquement les
 
 ```{r diagnostics3a,warning=FALSE}
 res.over1<-overimpute(impregsto,nnodes=7,plotvars = c(1,2,3,4,7,13),plotinds=sample(x = seq(nrow(dHB)),size = 100))
-
 ```
 
 **Ajustement des forêts aléatoires :**
 
 ```{r diagnostics3b,warning=FALSE}
 res.over2<-overimpute(impforest,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
-
 ```
 
 **Ajustement de la predictive mean matching :**
 
 ```{r diagnostics3c,warning=FALSE}
-
 res.over3<-overimpute(imppmm,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
 **Ajustement de l'ACP :**
 
 ```{r diagnostics3d, warning=FALSE}
-
 res.over4<-overimpute(imppca,nnodes=7,plotinds=sample(x = seq(nrow(dHB)),size = 100))
 ```
 
@@ -425,9 +420,9 @@ D'après les trois diagnostics réalisés, les 4 méthodes d'imputation présent
 * Ne présentent pas de problème de convergence
 * Ne permettent pas de compléter de façon adéquate les variables CRIM et ZN (cf. overimputation).
 
-Si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps.
+Si on compare les méthodes d'imputation en terme de rapidité machine, la méthode APC est celle qui demande plus de temps, suivi de près par les forêts aléatoires.
 
-La qualité de la régression linéaire sur le jeu de données complété est très proche quelques soient les méthodes d'imputation utilisées : les R² ajustés sont quasiment les memes (0.78) et les distributions des résidus oscillent autour de 0 (cf.**annexe 4.2**). 
+La qualité de la régression linéaire sur le jeu de données complété est très proche quelques soient les méthodes d'imputation utilisées : les R² ajustés sont quasiment les mêmes (0.78) et les distributions des résidus oscillent autour de 0 (cf.**annexe 4.2**). 
 
 **Résumé des performances des méthodes d'imputation**  
 
@@ -438,15 +433,16 @@ La qualité de la régression linéaire sur le jeu de données complété est tr
 |Diag.3 : ajustement  |3/5        |4/5              |4/5            |5/5             |
 |Temps machine (sec) |`r tdiff.regsto` |`r tdiff.rf`|`r tdiff.pmm`  |`r tdiff.acp`   |
 |Modelisation de MEDV|            |                 |               |                |
-|               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|               |
-|               |résidus proches 0|résidus proches 0|résidus proches 0|              |
+|               |R² ajusté = 0.78 |R² ajusté = 0.78 |R² ajusté = 0.78|R² ajusté = 0.78|
+|               |résidus proches 0|résidus proches 0|résidus proches 0|résidus proches 0|
 
-D'après ces éléments de performance, les imputations par PMM ou forêts aléatoires donnent les meilleurs résultats pour notre cas.  
+D'après ces éléments de performance, les imputations par PMM donnent les meilleurs résultats pour notre cas.  
   
   
 Sur le dataset étudié, nous obtenons des résultats proches pour la régression linéaire de MEDV, avec ou sans imputation des données manquantes. Cela peut s'expliquer par :
 
   - la petite dimension du jeu de données.  
+  - Un faible pourcentage des données manquantes.
   - le modèle de regression linéaire choisi qui n'inclut pas 2 des variables avec données manquantes (INDUS et AGE).   
   
   
@@ -580,7 +576,7 @@ summary(model)
 ```
 
 ### Annexe 1.6 : Graphique des résidus du modèle
-```{r res, fig.height = 3, fig.width = 5}
+```{r res, fig.height = 3.5, fig.width = 5}
 plot(model, 1)
 ```
 
@@ -674,7 +670,7 @@ plot(imppmm, main="Predictive mean matching", layout = c(2, 3))
 
 ```{r residualspmm, fig.height = 8, fig.width = 8}
 par(mfrow = c(3, 2))
-plot(model, 1, "original")
+plot(model2, 1, "original")
 plot(regrf,1,"Forêts aléatoires")
 plot(regregsto,1,"Régression stochastique")
 plot(regpmm, 1, "pmm")
